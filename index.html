@@ -1,0 +1,2825 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SGS Sports Randomizer</title>
+<meta name="description" content="Balanced team draw for the SGS Sports Event — Panthers, Titans, Stormers and Falcons.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230F1720'/%3E%3Crect x='0' y='52' width='16' height='12' fill='%23B02A6B'/%3E%3Crect x='16' y='52' width='16' height='12' fill='%23C07818'/%3E%3Crect x='32' y='52' width='16' height='12' fill='%231F6FB2'/%3E%3Crect x='48' y='52' width='16' height='12' fill='%2312874A'/%3E%3Ctext x='32' y='40' font-family='Arial,Helvetica,sans-serif' font-size='26' font-weight='bold' fill='%23fff' text-anchor='middle'%3ESGS%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --paper:#EFF2F5;
+  --surface:#FFFFFF;
+  --surface-2:#E6EBF0;
+  --ink:#0F1720;
+  --ink-2:#4A5766;
+  --ink-3:#7B8896;
+  --line:#D3DBE3;
+  --line-strong:#B9C4CF;
+  --panthers:#B02A6B;
+  --titans:#C07818;
+  --stormers:#1F6FB2;
+  --falcons:#12874A;
+  --panthers-deep:#8E1F55;
+  --titans-deep:#8F5A0C;
+  --stormers-deep:#14548F;
+  --falcons-deep:#0B6B3C;
+  --band-fg:#FFFFFF;
+  --good:#12874A;
+  --warn:#A76D22;
+  --bad:#B3392C;
+  --focus:#2A6A9C;
+  --adv-bg:#0F1720; --adv-fg:#FFFFFF;
+  --shadow:0 1px 2px rgba(15,23,32,.06), 0 8px 24px -16px rgba(15,23,32,.30);
+  --shadow-lift:0 24px 60px -24px rgba(15,23,32,.45);
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0C1117; --surface:#141B23; --surface-2:#1C242E;
+    --ink:#E9EEF4; --ink-2:#A6B2BF; --ink-3:#73808D;
+    --line:#27313C; --line-strong:#36424F;
+    --panthers:#D06795; --titans:#C08722; --stormers:#4A90D0; --falcons:#22AE75;
+    --panthers-deep:#7E1B4B; --titans-deep:#7E4E08; --stormers-deep:#124B80; --falcons-deep:#0A5E35;
+    --good:#22AE75; --warn:#DFA556; --bad:#EF8A78; --focus:#6BAFDE;
+    --adv-bg:#E9EEF4; --adv-fg:#0C1117;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -20px rgba(0,0,0,.9);
+    --shadow-lift:0 30px 70px -30px rgba(0,0,0,1);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0C1117; --surface:#141B23; --surface-2:#1C242E;
+  --ink:#E9EEF4; --ink-2:#A6B2BF; --ink-3:#73808D;
+  --line:#27313C; --line-strong:#36424F;
+  --panthers:#D06795; --titans:#C08722; --stormers:#4A90D0; --falcons:#22AE75;
+  --panthers-deep:#7E1B4B; --titans-deep:#7E4E08; --stormers-deep:#124B80; --falcons-deep:#0A5E35;
+  --good:#22AE75; --warn:#DFA556; --bad:#EF8A78; --focus:#6BAFDE;
+  --adv-bg:#E9EEF4; --adv-fg:#0C1117;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -20px rgba(0,0,0,.9);
+  --shadow-lift:0 30px 70px -30px rgba(0,0,0,1);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+/* .btn sets display:inline-flex, which beats the browser's own [hidden] rule */
+[hidden]{display:none !important}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  background-image:
+    radial-gradient(60vw 40vh at 8% -8%,  color-mix(in srgb, var(--panthers) 13%, transparent), transparent 70%),
+    radial-gradient(55vw 40vh at 38% -10%, color-mix(in srgb, var(--titans)   11%, transparent), transparent 70%),
+    radial-gradient(55vw 40vh at 68% -10%, color-mix(in srgb, var(--stormers) 12%, transparent), transparent 70%),
+    radial-gradient(60vw 40vh at 100% -8%, color-mix(in srgb, var(--falcons)  12%, transparent), transparent 70%);
+  background-repeat:no-repeat;
+  background-attachment:fixed;
+}
+.wrap{max-width:1400px; margin:0 auto; padding-inline:20px; padding-block:0 56px;}
+h1,h2,h3{font-family:Archivo,"IBM Plex Sans",sans-serif; margin:0; text-wrap:balance}
+.kicker{
+  font-size:10.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+}
+button{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--focus); outline-offset:2px; border-radius:4px}
+
+.masthead{
+  margin-top:20px; border-radius:16px; overflow:hidden; color:#F2F5F8;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.05) 0 12px, transparent 12px 24px) 0 0/34px 34px,
+    linear-gradient(110deg, #16202B 0%, #101821 55%, #0C131B 100%);
+  box-shadow:0 20px 50px -30px rgba(10,16,22,.9), inset 0 1px 0 rgba(255,255,255,.07);
+  position:relative;
+}
+.masthead::after{
+  content:""; position:absolute; inset:auto 0 0 0; height:4px;
+  background:linear-gradient(90deg,
+    var(--panthers) 0 25%, var(--titans) 25% 50%, var(--stormers) 50% 75%, var(--falcons) 75% 100%);
+}
+.mast-top{
+  display:flex; flex-wrap:wrap; align-items:center; gap:16px 24px;
+  padding:20px 22px 16px;
+}
+.brand{display:flex; align-items:center; gap:14px; margin-right:auto; min-width:0}
+.mark{
+  width:48px; height:48px; border-radius:12px; flex:none; display:grid; place-items:center;
+  background:#F2F5F8; color:#101821;
+  font-family:Archivo,sans-serif; font-variation-settings:"wdth" 118; font-weight:900;
+  font-size:15px; letter-spacing:.02em;
+  box-shadow:0 6px 16px -8px rgba(0,0,0,.8);
+}
+.brand h1{
+  font-size:clamp(21px, 2.4vw, 27px); font-weight:800; line-height:1.05; letter-spacing:-.02em;
+  font-variation-settings:"wdth" 112; color:#FFFFFF;
+}
+.brand p{margin:3px 0 0; font-size:12px; color:#93A3B4; letter-spacing:.09em; text-transform:uppercase; font-weight:600}
+.actions{display:flex; flex-wrap:wrap; gap:9px; align-items:center}
+
+.scoreboard{
+  display:grid; gap:1px; background:rgba(255,255,255,.08);
+  grid-template-columns:repeat(5, minmax(0,1fr));
+  border-top:1px solid rgba(255,255,255,.08);
+}
+@media (max-width:1080px){ .scoreboard{grid-template-columns:repeat(3, minmax(0,1fr))} }
+@media (max-width:640px){
+  .scoreboard{grid-template-columns:repeat(2, minmax(0,1fr))}
+  .scoreboard .tile:last-child{grid-column:1 / -1}
+}
+.tile{
+  background:#0E161E; padding:12px 16px 13px;
+  display:flex; flex-direction:column; gap:2px; min-width:0;
+}
+.tile .fig{
+  font-family:"IBM Plex Mono",monospace; font-size:22px; font-weight:600; line-height:1.1;
+  color:#FFFFFF; font-variant-numeric:tabular-nums; letter-spacing:-.02em;
+}
+.tile .fig.sm{font-size:14px; font-weight:500; padding-block:4px 3px}
+.tile .lab{
+  font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:#7E8E9F;
+}
+.tile.accent .fig{color:var(--good)}
+.btn{
+  display:inline-flex; align-items:center; gap:7px;
+  padding:9px 15px; border-radius:8px; cursor:pointer;
+  border:1px solid var(--line-strong); background:var(--surface); color:var(--ink);
+  font-size:13.5px; font-weight:500; white-space:nowrap;
+  transition:background .12s ease, border-color .12s ease, transform .06s ease;
+}
+.btn:hover:not(:disabled){border-color:var(--ink-3)}
+.btn:active:not(:disabled){transform:translateY(1px)}
+.btn:disabled{opacity:.4; cursor:default}
+.btn.primary{background:var(--ink); color:var(--paper); border-color:var(--ink); font-weight:600}
+.btn.primary:hover{opacity:.9}
+.btn.ghost{background:transparent; border-color:transparent; color:var(--ink-2)}
+.btn.ghost:hover:not(:disabled){background:var(--surface-2); color:var(--ink)}
+.masthead .btn{
+  background:rgba(255,255,255,.07); border-color:rgba(255,255,255,.16); color:#E7EDF3;
+}
+.masthead .btn:hover:not(:disabled){background:rgba(255,255,255,.13); border-color:rgba(255,255,255,.3)}
+.masthead .btn:disabled{opacity:.32}
+.masthead .btn.primary{
+  background:#F2F5F8; color:#101821; border-color:#F2F5F8; font-weight:700;
+  box-shadow:0 8px 20px -12px rgba(0,0,0,.9);
+}
+.masthead .btn.primary:hover{background:#FFFFFF; border-color:#FFFFFF; opacity:1}
+.btn.sm{padding:6px 11px; font-size:12.5px}
+.btn.danger{background:var(--bad); border-color:var(--bad); color:#fff; font-weight:600}
+.btn.danger:hover:not(:disabled){opacity:.9; border-color:var(--bad)}
+.iconbtn.danger:hover{background:color-mix(in srgb, var(--bad) 18%, transparent); color:var(--bad)}
+.dellist{margin:10px 0 0; padding-left:18px; font-size:12.5px; color:var(--ink-2)}
+.dellist li{margin:3px 0}
+.btn svg{width:15px; height:15px; flex:none}
+
+.strip{
+  display:flex; flex-wrap:wrap; align-items:center; gap:12px 26px;
+  margin-top:18px; padding:12px 14px; border-radius:11px;
+  border:1px solid var(--line); background:var(--surface); box-shadow:var(--shadow);
+}
+.brackets{display:flex; flex-wrap:wrap; gap:8px}
+.bchip{
+  display:inline-flex; align-items:baseline; gap:7px; padding:5px 6px 5px 11px; border-radius:999px;
+  border:1px solid var(--line); background:var(--surface-2); font-size:12.5px; color:var(--ink-2);
+}
+.bchip b{
+  font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:11.5px; color:var(--ink);
+  background:var(--surface); border-radius:999px; padding:1px 8px; font-variant-numeric:tabular-nums;
+}
+.bchip.empty{opacity:.45}
+.opts{display:flex; flex-wrap:wrap; align-items:center; gap:16px; margin-left:auto; font-size:13px; color:var(--ink-2)}
+.opts label{display:inline-flex; align-items:center; gap:7px; cursor:pointer}
+.opts input[type=checkbox]{accent-color:var(--focus); width:15px; height:15px}
+.status{
+  display:inline-flex; align-items:center; gap:8px; font-size:12.5px; font-weight:600;
+  letter-spacing:.01em; padding:6px 13px; border-radius:999px; border:1px solid var(--line);
+  background:color-mix(in srgb, currentColor 8%, transparent);
+}
+.status .dot{width:7px; height:7px; border-radius:50%; background:currentColor}
+.status.ok{color:var(--good); border-color:color-mix(in srgb, var(--good) 35%, transparent)}
+.status.warn{color:var(--warn); border-color:color-mix(in srgb, var(--warn) 35%, transparent)}
+
+.lockbar{
+  display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px;
+  margin-top:12px; padding:9px 14px; border-radius:11px;
+  border:1px dashed var(--line-strong); background:transparent;
+  font-size:12.5px; color:var(--ink-3);
+}
+.lockbar .key{font-weight:600; color:var(--ink); display:inline-flex; align-items:center; gap:7px}
+.lockbar .key svg{width:14px; height:14px}
+.livedot{width:8px; height:8px; border-radius:50%; background:var(--good); flex:none; position:relative}
+.livedot::after{
+  content:""; position:absolute; inset:-4px; border-radius:50%;
+  border:1px solid var(--good); opacity:.5; animation:pulse 2.4s ease-out infinite;
+}
+.livedot.busy{background:var(--warn)} .livedot.busy::after{border-color:var(--warn)}
+.livedot.off{background:var(--bad); } .livedot.off::after{border-color:var(--bad); animation:none}
+@keyframes pulse{0%{transform:scale(.7); opacity:.6} 70%{transform:scale(1.25); opacity:0} 100%{opacity:0}}
+.lockbar .spacer{flex:1}
+.whoami{
+  font-size:11.5px; font-weight:600; color:var(--ink-2);
+  border:1px solid var(--line); border-radius:999px; padding:3px 10px; background:var(--surface);
+  cursor:pointer;
+}
+.whoami:hover{border-color:var(--ink-3); color:var(--ink)}
+
+.grid{display:grid; gap:16px; margin-top:16px; grid-template-columns:repeat(4, minmax(0,1fr));}
+@media (max-width:1180px){ .grid{grid-template-columns:repeat(2, minmax(0,1fr))} }
+@media (max-width:680px){ .grid{grid-template-columns:1fr} }
+
+.team{
+  background:var(--surface); border:1px solid var(--line); border-radius:13px;
+  box-shadow:var(--shadow); display:flex; flex-direction:column; overflow:hidden;
+  transition:border-color .12s ease, box-shadow .12s ease, transform .12s ease;
+}
+.team.dragover{
+  border-color:var(--team);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--team) 32%, transparent), var(--shadow);
+  transform:translateY(-2px);
+}
+.team-head{
+  padding:14px 15px 13px; position:relative; color:var(--band-fg);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.10) 0 10px, transparent 10px 20px) 0 0/28px 28px,
+    var(--team-deep);
+}
+.team-name{
+  font-family:Archivo,sans-serif;
+  font-size:19px; font-weight:800; letter-spacing:.01em; text-transform:uppercase;
+  font-variation-settings:"wdth" 115;
+  display:flex; align-items:center; justify-content:space-between; gap:10px; color:var(--band-fg);
+}
+.team-count{
+  font-family:"IBM Plex Mono",monospace; font-size:14px; font-weight:600;
+  color:var(--band-fg); background:rgba(255,255,255,.16);
+  border:1px solid rgba(255,255,255,.22);
+  width:34px; height:34px; border-radius:50%; flex:none;
+  display:grid; place-items:center; font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em;
+}
+.tally{display:flex; flex-wrap:wrap; gap:4px; margin-top:11px}
+.tally span{
+  font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.03em;
+  color:rgba(255,255,255,.55); border:1px solid rgba(255,255,255,.18); border-radius:5px;
+  padding:2px 6px; font-variant-numeric:tabular-nums;
+}
+.tally span.has{color:#FFFFFF; border-color:rgba(255,255,255,.42); background:rgba(255,255,255,.12)}
+.team-body{padding:8px 8px 12px; flex:1; display:flex; flex-direction:column; gap:2px; min-height:70px}
+.empty-note{padding:22px 12px; text-align:center; color:var(--ink-3); font-size:12.5px}
+
+.agehdr{
+  display:flex; align-items:center; gap:8px; padding:12px 7px 5px;
+  font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+  color:color-mix(in srgb, var(--team, var(--ink-3)) 70%, var(--ink-3));
+}
+.agehdr::after{
+  content:""; flex:1; height:1px;
+  background:linear-gradient(90deg, color-mix(in srgb, var(--team, var(--line)) 35%, transparent), var(--line));
+}
+
+.player{
+  border-radius:8px; padding:7px 8px 7px 9px; cursor:grab;
+  border:1px solid transparent; background:transparent;
+  box-shadow:inset 2px 0 0 transparent;
+  transition:background .1s ease, border-color .1s ease, box-shadow .1s ease;
+}
+.player:hover{background:var(--surface-2); box-shadow:inset 2px 0 0 var(--team, var(--focus))}
+.player.dragging{opacity:.4}
+.player.flash{animation:flash 1.1s ease}
+@keyframes flash{
+  0%,55%{background:color-mix(in srgb, var(--focus) 22%, transparent); border-color:var(--focus)}
+  100%{background:transparent; border-color:transparent}
+}
+.prow{display:flex; align-items:baseline; gap:8px; position:relative}
+.pname{font-weight:600; font-size:13.5px; letter-spacing:-.005em; flex:1; min-width:0; overflow-wrap:anywhere}
+.pname .newdot{
+  display:inline-block; width:5px; height:5px; border-radius:50%;
+  background:var(--focus); vertical-align:middle; margin-left:5px;
+}
+.pmeta{
+  font-family:"IBM Plex Mono",monospace; font-size:10px; color:var(--ink-3);
+  white-space:nowrap; letter-spacing:.01em; transition:opacity .12s ease;
+}
+/* controls stay visible — a delete you cannot see is a delete you cannot use */
+.pacts{display:flex; gap:0; margin-left:1px; opacity:.5; transition:opacity .12s ease}
+.player:hover .pacts,.player:focus-within .pacts{opacity:1}
+.iconbtn{
+  border:none; background:transparent; color:var(--ink-3); cursor:pointer;
+  width:20px; height:20px; border-radius:5px; display:grid; place-items:center;
+  font-size:12px; line-height:1; padding:0;
+}
+.iconbtn:hover{background:var(--line); color:var(--ink)}
+.sports{display:flex; flex-wrap:wrap; gap:3px; margin-top:5px}
+.sp{
+  font-size:10px; line-height:1.4; padding:2px 7px; border-radius:999px;
+  background:color-mix(in srgb, var(--team, var(--ink)) 13%, transparent);
+  border:1px solid color-mix(in srgb, var(--team, var(--ink)) 32%, transparent);
+  color:var(--ink); white-space:nowrap; letter-spacing:.01em; font-weight:600;
+}
+.sp::before{
+  content:"★"; font-size:8px; margin-right:4px; vertical-align:1px;
+  color:var(--team, var(--ink)); opacity:.9;
+}
+body.nosports .sports{display:none}
+
+.bench{
+  margin-top:20px; background:var(--surface); border:1px solid var(--line);
+  border-radius:13px; box-shadow:var(--shadow); overflow:hidden;
+}
+.bench-head{border-left:4px solid var(--ink-3)}
+.bench.dragover{border-color:var(--focus); box-shadow:0 0 0 2px color-mix(in srgb, var(--focus) 30%, transparent)}
+.bench-head{display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; padding:13px 16px; border-bottom:1px solid var(--line)}
+.bench-head h2{
+  font-family:Archivo,sans-serif; font-size:15px; font-weight:800;
+  text-transform:uppercase; letter-spacing:.06em; font-variation-settings:"wdth" 112;
+}
+.bench-head p{margin:0; font-size:12.5px; color:var(--ink-3); flex:1; min-width:180px}
+#benchCount{
+  font-family:"IBM Plex Mono",monospace; font-size:13px; font-weight:600;
+  width:30px; height:30px; border-radius:50%; display:grid; place-items:center;
+  background:var(--surface-2); color:var(--ink-2); border:1px solid var(--line);
+}
+.bench-body{padding:6px 10px 14px; display:grid; gap:2px; grid-template-columns:repeat(auto-fill, minmax(230px,1fr))}
+
+dialog{
+  border:1px solid var(--line); background:var(--surface); color:var(--ink);
+  border-radius:12px; padding:0; box-shadow:var(--shadow-lift);
+  width:min(620px, calc(100vw - 32px)); max-height:min(88vh, 820px);
+}
+dialog.wide{width:min(760px, calc(100vw - 32px))}
+dialog::backdrop{background:rgba(9,14,20,.55)}
+.dlg-head{padding:16px 18px 13px; border-bottom:1px solid var(--line)}
+.dlg-head h3{font-size:16px; font-weight:700; letter-spacing:-.01em}
+.dlg-head p{margin:4px 0 0; font-size:12.5px; color:var(--ink-3)}
+.dlg-body{padding:14px 18px; overflow:auto; max-height:56vh}
+.dlg-foot{display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:13px 18px; border-top:1px solid var(--line); background:var(--surface-2)}
+.dlg-foot .spacer{flex:1}
+.dlg-tools{display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:14px 18px 0}
+.dlg-tools input[type=search]{
+  flex:1 1 180px; font:inherit; font-size:13px; padding:8px 11px; border-radius:7px;
+  border:1px solid var(--line-strong); background:var(--surface); color:var(--ink);
+}
+.dlg-tools label{display:inline-flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink-2); cursor:pointer}
+.dlg-tools input[type=checkbox]{accent-color:var(--focus); width:15px; height:15px}
+
+.pill{
+  display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:600;
+  letter-spacing:.02em; padding:2px 8px; border-radius:999px;
+  border:1px solid color-mix(in srgb, var(--team) 40%, transparent); color:var(--team);
+}
+.pill .dot{width:6px; height:6px; border-radius:50%; background:var(--team)}
+.subject{
+  display:flex; flex-wrap:wrap; align-items:center; gap:9px; padding:10px 12px;
+  border-radius:9px; background:var(--surface-2); border:1px solid var(--line); margin-bottom:4px;
+}
+.subject strong{font-size:13.5px}
+.subject .pmeta{font-size:11px}
+
+.opt-list{display:flex; flex-direction:column; gap:2px}
+.opt-group{
+  font-size:10.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--ink-3); padding:12px 4px 5px; display:flex; align-items:center; gap:8px;
+}
+.opt-group::after{content:""; flex:1; height:1px; background:var(--line)}
+.opt{
+  display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+  padding:8px 10px; border-radius:8px; border:1px solid transparent; background:transparent; cursor:pointer;
+}
+.opt:hover{background:var(--surface-2)}
+.opt[aria-checked="true"]{border-color:var(--focus); background:color-mix(in srgb, var(--focus) 10%, transparent)}
+.opt .nm{font-weight:600; font-size:13.5px; flex:1; min-width:0; overflow-wrap:anywhere}
+.opt .tick{
+  width:16px; height:16px; border-radius:50%; border:1.5px solid var(--line-strong); flex:none;
+  display:grid; place-items:center; font-size:10px; color:transparent;
+}
+.opt[aria-checked="true"] .tick{background:var(--focus); border-color:var(--focus); color:#fff}
+.none-note{padding:18px 4px; color:var(--ink-3); font-size:13px; text-align:center}
+.caution{font-size:12.5px; color:var(--warn); display:none; align-items:center; gap:7px; flex-basis:100%; order:-1}
+.caution.on{display:flex}
+
+.movegrid{display:grid; gap:8px; grid-template-columns:repeat(auto-fit, minmax(140px,1fr))}
+.movebtn{
+  display:flex; align-items:center; gap:9px; padding:12px 13px; cursor:pointer;
+  border:1px solid var(--line-strong); border-radius:9px; background:var(--surface);
+  font-size:13.5px; font-weight:600; text-align:left;
+}
+.movebtn:hover:not(:disabled){border-color:var(--team, var(--ink-3))}
+.movebtn .dot{width:9px; height:9px; border-radius:50%; background:var(--team, var(--ink-3)); flex:none}
+.movebtn:disabled{opacity:.45; cursor:default}
+.movebtn small{display:block; font-weight:400; font-size:11px; color:var(--ink-3); letter-spacing:.01em}
+.exbtn{align-items:flex-start; padding:14px 15px}
+.exbtn .dot{margin-top:5px}
+.exbtn small{margin-top:3px; line-height:1.45}
+.exbtn:disabled small{color:var(--warn)}
+.exresult{margin-top:16px; padding-top:14px; border-top:1px solid var(--line)}
+
+/* add-player form */
+.fields{display:grid; gap:10px; grid-template-columns:repeat(auto-fit, minmax(180px,1fr))}
+.field textarea{
+  font-family:"IBM Plex Mono",monospace; font-size:11.5px; line-height:1.5;
+  padding:10px 11px; border-radius:7px; resize:vertical; width:100%;
+  border:1px solid var(--line-strong); background:var(--surface-2); color:var(--ink);
+  overflow-wrap:anywhere;
+}
+.field .hint{display:block; margin-top:5px; font-size:11.5px; color:var(--ink-3); line-height:1.45}
+.field{display:flex; flex-direction:column; gap:5px}
+.field label{font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3)}
+.field input,.field select{
+  font:inherit; font-size:13.5px; padding:8px 10px; border-radius:7px;
+  border:1px solid var(--line-strong); background:var(--surface); color:var(--ink); width:100%;
+}
+.field.req label::after{content:" *"; color:var(--warn)}
+.sechdr{
+  display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+  margin:20px 0 4px; padding-top:16px; border-top:1px solid var(--line);
+}
+.sechdr h4{margin:0; font-size:13px; font-weight:700; font-family:Archivo,sans-serif}
+.sechdr p{margin:0; font-size:12px; color:var(--ink-3); flex:1; min-width:150px}
+.sechdr label{display:inline-flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink-2); cursor:pointer}
+.sechdr input[type=checkbox]{accent-color:var(--focus); width:15px; height:15px}
+.evgroup{
+  font-size:10.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--ink-3); padding:14px 0 6px; display:flex; align-items:center; gap:8px;
+}
+.evgroup::after{content:""; flex:1; height:1px; background:var(--line)}
+.evrow{
+  display:flex; align-items:center; gap:10px; padding:4px 0;
+  border-bottom:1px dotted color-mix(in srgb, var(--line) 80%, transparent);
+}
+.evrow span{flex:1; font-size:13px; min-width:0; overflow-wrap:anywhere}
+.evrow select{
+  flex:none; width:132px; font:inherit; font-size:12.5px; padding:5px 8px; border-radius:6px;
+  border:1px solid var(--line-strong); background:var(--surface); color:var(--ink);
+}
+.evrow select.set{border-color:var(--focus); font-weight:600}
+.evline{
+  display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:7px 0;
+  border-bottom:1px dotted color-mix(in srgb, var(--line) 80%, transparent);
+}
+.evline .idx{
+  font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-3);
+  width:18px; flex:none; text-align:right;
+}
+.evline select{
+  font:inherit; font-size:13px; padding:7px 9px; border-radius:7px;
+  border:1px solid var(--line-strong); background:var(--surface); color:var(--ink); min-width:0;
+}
+.evline .sport{flex:3 1 220px}
+.evline .level{flex:1 1 130px}
+.evline select.set{border-color:var(--focus); font-weight:600}
+.evline .drop{
+  border:none; background:transparent; color:var(--ink-3); cursor:pointer; flex:none;
+  width:26px; height:26px; border-radius:6px; display:grid; place-items:center; font-size:13px;
+}
+.evline .drop:hover{background:var(--line); color:var(--ink)}
+.evempty{padding:14px 4px; font-size:12.5px; color:var(--ink-3)}
+#addEventBtn{margin-top:12px}
+.picked{
+  font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-2);
+  font-variant-numeric:tabular-nums;
+}
+
+.toast{
+  position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
+  background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:9px;
+  font-size:13px; font-weight:500; box-shadow:var(--shadow-lift); max-width:min(560px, 92vw);
+  opacity:0; pointer-events:none; transition:opacity .18s ease, transform .18s ease; z-index:50; text-align:center;
+}
+.toast.on{opacity:1; transform:translateX(-50%) translateY(-4px)}
+
+footer{
+  margin-top:24px; padding-top:16px; border-top:1px solid var(--line);
+  font-size:12px; color:var(--ink-3); display:flex; flex-wrap:wrap; gap:6px 20px;
+}
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+
+@keyframes deal{
+  from{opacity:0; transform:translateY(10px) scale(.985)}
+  to{opacity:1; transform:none}
+}
+body.dealing .team{animation:deal .34s cubic-bezier(.2,.7,.3,1) both}
+body.dealing .team:nth-child(2){animation-delay:.06s}
+body.dealing .team:nth-child(3){animation-delay:.12s}
+body.dealing .team:nth-child(4){animation-delay:.18s}
+
+@media (prefers-reduced-motion: reduce){ *{transition:none !important; animation:none !important} }
+@media print{
+  body{background:#fff}
+  .actions,.opts,.pacts,.bench-head p,.lockbar{display:none !important}
+  .grid{grid-template-columns:repeat(2,1fr)}
+  .team{break-inside:avoid; box-shadow:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+   <div class="mast-top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">SGS</div>
+      <div>
+        <h1>SGS Sports Randomizer</h1>
+        <p>Sports Event 2.0 · Panthers · Titans · Stormers · Falcons</p>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="importBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        Import roster
+      </button>
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="sr">
+      <button class="btn" id="exportBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+        Export teams
+      </button>
+      <button class="btn" id="saveSheetBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+        Save now
+      </button>
+      <button class="btn" id="shareBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4"/><path d="M15.4 6.5l-6.8 4"/></svg>
+        Share draw
+      </button>
+      <button class="btn" id="undoBtn" type="button" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg>
+        Undo
+      </button>
+      <button class="btn primary" id="genBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/></svg>
+        Generate teams
+      </button>
+    </div>
+   </div>
+   <div class="scoreboard">
+     <div class="tile"><span class="fig" id="statPlayers">0</span><span class="lab">Players</span></div>
+     <div class="tile"><span class="fig" id="statPlaced">0</span><span class="lab">On a team</span></div>
+     <div class="tile"><span class="fig" id="statBench">0</span><span class="lab">Unassigned</span></div>
+     <div class="tile"><span class="fig" id="statEvents">0</span><span class="lab">Event entries</span></div>
+     <div class="tile"><span class="fig sm" id="statDrawn">Not drawn</span><span class="lab">Last draw</span></div>
+   </div>
+   <p id="rosterLine" class="sr">Loading roster…</p>
+  </header>
+
+  <section class="strip" aria-label="Roster balance">
+    <div class="brackets" id="brackets"></div>
+    <div class="opts">
+      <label><input type="checkbox" id="optGender" checked> Balance gender</label>
+      <label><input type="checkbox" id="optSports" checked> Show advanced sports</label>
+      <span class="status" id="balanceStatus"><span class="dot"></span><span id="balanceText">Not drawn</span></span>
+    </div>
+  </section>
+
+  <div class="lockbar">
+    <span class="key">
+      <span class="livedot" id="liveDot" hidden></span>
+      <svg id="lockIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span id="lockLabel">Draw locked</span>
+    </span>
+    <span id="lockDetail">This draw is saved in this browser and reloads unchanged. Only Generate teams or a new import replaces it.</span>
+    <span class="spacer"></span>
+    <span class="whoami" id="whoami" hidden></span>
+    <button class="btn ghost sm" id="syncBtn" type="button">Refresh from sheet</button>
+    <button class="btn ghost sm" id="connectBtn" type="button">Sheet settings</button>
+    <button class="btn ghost sm" id="resetBtn" type="button">Restore original sheet</button>
+  </div>
+
+  <main class="grid" id="grid"></main>
+
+  <section class="bench" id="bench">
+    <div class="bench-head">
+      <h2>Unassigned</h2>
+      <p>Players here sit out the draw. Use <b>Move</b> on any player to place them, or drag them onto a team.</p>
+      <span class="team-count" id="benchCount">0</span>
+      <button class="btn sm" id="addBtn" type="button">+ Add player</button>
+    </div>
+    <div class="bench-body" id="benchBody"></div>
+  </section>
+
+  <footer>
+    <span>Only <b>Advanced</b>-level entries are listed under each name; the export carries every registered event.</span>
+    <span>⇄ swaps two players · → moves one · drag and drop also works.</span>
+  </footer>
+</div>
+
+<dialog id="swapDlg" aria-labelledby="swapTitle">
+  <div class="dlg-head">
+    <h3 id="swapTitle">Swap two players</h3>
+    <p id="swapSub">Pick who trades places.</p>
+  </div>
+  <div class="dlg-tools">
+    <input type="search" id="swapSearch" placeholder="Search by name or flat…" aria-label="Search players">
+    <label><input type="checkbox" id="swapSameAge" checked> Same age group only</label>
+  </div>
+  <div class="dlg-body">
+    <div class="subject" id="swapSubject"></div>
+    <div class="opt-list" id="swapList"></div>
+  </div>
+  <div class="dlg-foot">
+    <span class="caution" id="swapCaution">⚠ Swapping across age groups will unbalance that age group.</span>
+    <span class="spacer"></span>
+    <button class="btn ghost" type="button" id="swapCancel">Cancel</button>
+    <button class="btn primary" type="button" id="swapGo" disabled>Swap</button>
+  </div>
+</dialog>
+
+<dialog id="moveDlg" aria-labelledby="moveTitle">
+  <div class="dlg-head">
+    <h3 id="moveTitle">Move player</h3>
+    <p id="moveSub">Choose a destination.</p>
+  </div>
+  <div class="dlg-body"><div class="movegrid" id="moveGrid"></div></div>
+  <div class="dlg-foot">
+    <span class="spacer"></span>
+    <button class="btn ghost" type="button" id="moveCancel">Cancel</button>
+  </div>
+</dialog>
+
+<dialog id="addDlg" class="wide" aria-labelledby="addTitle">
+  <div id="addForm">
+    <div class="dlg-head">
+      <h3 id="addTitle">Add a player</h3>
+      <p>Same fields as the registration form. Pick their team and add as many events as they want — they go straight onto that team.</p>
+    </div>
+    <div class="dlg-body">
+      <div class="fields" id="addFields"></div>
+      <div class="sechdr">
+        <h4>Events entered</h4>
+        <p><span class="picked" id="addPicked">0 selected</span></p>
+        <label><input type="checkbox" id="addAgeFilter" checked> Only events open to this age group</label>
+      </div>
+      <div id="addEvents"></div>
+      <button class="btn sm" type="button" id="addEventBtn">+ Add another sport</button>
+    </div>
+    <div class="dlg-foot">
+      <span class="spacer"></span>
+      <button class="btn ghost" type="button" id="addCancel">Cancel</button>
+      <button class="btn primary" type="button" id="addSubmit">Add player</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="delDlg" aria-labelledby="delTitle">
+  <div class="dlg-head">
+    <h3 id="delTitle">Remove player</h3>
+    <p id="delSub">This takes them out of the draw and the export.</p>
+  </div>
+  <div class="dlg-body">
+    <div class="subject" id="delSubject"></div>
+    <ul class="dellist" id="delWhat"></ul>
+  </div>
+  <div class="dlg-foot">
+    <span class="spacer"></span>
+    <button class="btn ghost" type="button" id="delCancel">Cancel</button>
+    <button class="btn danger" type="button" id="delGo">Remove player</button>
+  </div>
+</dialog>
+
+<dialog id="exportDlg" aria-labelledby="exportTitle">
+  <div class="dlg-head">
+    <h3 id="exportTitle">Export the teams</h3>
+    <p>Same eight tabs either way — Summary, the four teams, Unassigned, Manual entries and the Change log.</p>
+  </div>
+  <div class="dlg-body">
+    <div class="movegrid">
+      <button class="movebtn exbtn" type="button" id="exXlsx" style="--team:var(--good)">
+        <span class="dot"></span>
+        <span>Excel file
+          <small>Downloads an .xlsx to this device. Works with no setup.</small>
+        </span>
+      </button>
+      <button class="movebtn exbtn" type="button" id="exGsheet" style="--team:var(--stormers)">
+        <span class="dot"></span>
+        <span>Google Sheet
+          <small id="exGsheetNote">Creates a new spreadsheet in Drive and gives you the link.</small>
+        </span>
+      </button>
+    </div>
+    <div class="exresult" id="exResult" hidden>
+      <div class="field">
+        <label for="exUrl">New Google Sheet</label>
+        <textarea id="exUrl" rows="2" readonly></textarea>
+        <small class="hint" id="exHint"></small>
+      </div>
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <span class="spacer"></span>
+    <button class="btn ghost" type="button" id="exClose">Close</button>
+    <button class="btn" type="button" id="exCopy" hidden>Copy link</button>
+    <button class="btn primary" type="button" id="exOpen" hidden>Open sheet</button>
+  </div>
+</dialog>
+
+<dialog id="whoDlg" aria-labelledby="whoTitle">
+  <div class="dlg-head">
+    <h3 id="whoTitle">Who's making this change?</h3>
+    <p>Recorded against every player you add and every change you make, so the committee can see who did what. Asked once per browser.</p>
+  </div>
+  <div class="dlg-body">
+    <div class="field req">
+      <label for="whoName">Your name</label>
+      <input id="whoName" type="text" placeholder="e.g. Rohan Kurian Xavier" autocomplete="name">
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <span class="spacer"></span>
+    <button class="btn primary" type="button" id="whoGo">Continue</button>
+  </div>
+</dialog>
+
+<dialog id="connectDlg" aria-labelledby="connectTitle">
+  <div class="dlg-head">
+    <h3 id="connectTitle">Master sheet</h3>
+    <p id="connectHint">Point this page at the Apps Script web app on your registration sheet.</p>
+  </div>
+  <div class="dlg-body">
+    <div class="field">
+      <label for="connectUrl">Apps Script web app URL</label>
+      <input id="connectUrl" type="url" placeholder="https://script.google.com/macros/s/…/exec">
+      <small class="hint" id="connectBaked" hidden>Set in the page source for everyone — it cannot be changed from here.</small>
+      <small class="hint">Deploy → New deployment → Web app, executing as you, access "Anyone". See apps-script/Code.gs.</small>
+    </div>
+    <div class="field" style="margin-top:14px">
+      <label for="connectWho">Your name</label>
+      <input id="connectWho" type="text" placeholder="e.g. Rohan" autocomplete="name">
+      <small class="hint">Written next to every save so the committee can see who last published the teams.</small>
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <span class="spacer"></span>
+    <button class="btn ghost" type="button" id="connectClose">Cancel</button>
+    <button class="btn primary" type="button" id="connectSave">Save settings</button>
+  </div>
+</dialog>
+
+<dialog id="shareDlg" class="wide" aria-labelledby="shareTitle">
+  <div class="dlg-head">
+    <h3 id="shareTitle">Share this exact draw</h3>
+    <p>The teams below travel inside the link, so whoever opens it sees these teams — not a fresh random draw.</p>
+  </div>
+  <div class="dlg-body">
+    <div class="field">
+      <label for="shareBase">Where the app is published</label>
+      <input id="shareBase" type="url" placeholder="https://yourname.github.io/sgs-sports-randomizer/">
+      <small class="hint">Paste your public address once — it is remembered. Anyone with the finished link can use every feature.</small>
+    </div>
+    <div class="field" style="margin-top:14px">
+      <label for="shareUrl">Link to send</label>
+      <textarea id="shareUrl" rows="4" readonly></textarea>
+      <small class="hint" id="shareSize"></small>
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <span class="spacer"></span>
+    <button class="btn ghost" type="button" id="shareClose">Close</button>
+    <button class="btn primary" type="button" id="shareCopy">Copy link</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script id="sheet-data" type="application/json">{"headers":["Timestamp","Full Name","Gender","Email address","Age Group","Flat number (e.g. B2401)","Year of Birth (YYYY)","Badminton (Singles)","Badminton (Doubles)","Badminton (Mixed Doubles)","Basketball","Cricket","Chess","Carrom","Football","Pool (Singles)","Pool (Doubles)","Pool (Mixed Doubles)","Pickleball (Singles)","Squash (Singles)","Pickleball (Doubles)","Pickleball (Mixed Doubles)","Squash (Doubles)","Squash (Mixed Doubles)","Table Tennis (Singles)","Table Tennis (Doubles)","Table Tennis (Mixed Doubles)","Swimming (freestyle)","Swimming (backstroke)","Swimming (breaststroke)","Swimming (butterfly)","Skating","Slow Cycling","Treasure Hunt","Lemon & Spoon Race","Sack Race","5K Marathon (17-60 years)","5 KM Marathon (13-16 years)","3 KM Walking Race (61 years and above)","3 KM Walking Race (17-60)","3 KM Run (13-16 years)","2 KM Run (9-12 years)","1.6 KM Run (8 years and below)","Tug of War","Volleyball","Shot Put","Throw Ball","7 Stones (Lagori/Satoliya)","Sprint (100 M)","Relay Race - 160 M (8 years and below)","Relay Race - 200 M (9-12 years)","Relay Race - 400 M (13-16 years)","Relay Race - 400 M (17-60 years)","Please check"],"rows":[{"Timestamp":"2026-09-08 10:22:06","Full Name":"Ashutosh Jindal","Gender":"Male","Email address":"jindal.ashu@gmail.com","Age Group":"Adult (17-60 years)","Flat number (e.g. B2401)":"C201","Year of Birth (YYYY)":1987,"Badminton (Singles)":"Intermediate","Badminton (Doubles)":"Intermediate","Badminton (Mixed Doubles)":"Intermediate","Basketball":"Beginner","Cricket":"Advanced","Carrom":"Intermediate","Football":"Beginner","Pool (Singles)":"Beginner","Pool (Doubles)":"Intermediate","Pool (Mixed Doubles)":"Intermediate","Pickleball (Singles)":"Beginner","Squash (Singles)":"Beginner","Pickleball (Doubles)":"Beginner","Table Tennis (Singles)":"Intermediate","Table Tennis (Doubles)":"Intermediate","Swimming (freestyle)":"Beginner","Slow Cycling":"Intermediate","5K Marathon (17-60 years)":"Intermediate","Tug of War":"Intermediate","Volleyball":"Beginner","Shot Put":"Beginner","Throw Ball":"Beginner","7 Stones (Lagori/Satoliya)":"Beginner","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-08 10:46:29","Full Name":"Keshav Ajay","Gender":"Male","Email address":"mayamohant@gmail.com","Age Group":"13-16 years","Flat number (e.g. B2401)":"B1503","Year of Birth (YYYY)":2012,"Badminton (Singles)":"Beginner","Football":"Advanced","Pool (Doubles)":"Beginner","Pickleball (Singles)":"Intermediate","Squash (Singles)":"Advanced","Table Tennis (Singles)":"Intermediate","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-08 10:49:26","Full Name":"Maya Mohan","Gender":"Female","Email address":"mayamohant@gmail.com","Age Group":"Adult (17-60 years)","Flat number (e.g. B2401)":"B1503","Year of Birth (YYYY)":1981,"Carrom":"Beginner","Treasure Hunt":"Intermediate","Lemon & Spoon Race":"Intermediate","Sack Race":"Intermediate","3 KM Walking Race (17-60)":"Intermediate","Relay Race - 400 M (17-60 years)":"Beginner","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 07:21:56","Full Name":"Yuvam Choudhary","Gender":"Male","Email address":"shreya.choudhury@gmail.com","Age Group":"9-12 years","Flat number (e.g. B2401)":"C502","Year of Birth (YYYY)":2014,"Badminton (Doubles)":"Beginner","Basketball":"Intermediate","Cricket":"Intermediate","Football":"Intermediate","Pool (Singles)":"Beginner","Pool (Doubles)":"Beginner","Squash (Singles)":"Intermediate","Squash (Doubles)":"Intermediate","Table Tennis (Singles)":"Beginner","Table Tennis (Doubles)":"Intermediate","Slow Cycling":"Beginner","Treasure Hunt":"Beginner","Lemon & Spoon Race":"Beginner","Sack Race":"Beginner","2 KM Run (9-12 years)":"Intermediate","Tug of War":"Beginner","Volleyball":"Intermediate","Shot Put":"Intermediate","Throw Ball":"Intermediate","Sprint (100 M)":"Intermediate","Relay Race - 200 M (9-12 years)":"Intermediate","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 08:05:24","Full Name":"Nicole Varghese","Gender":"Female","Email address":"sherin.varghese@gmail.com","Age Group":"9-12 years","Flat number (e.g. B2401)":"C002","Year of Birth (YYYY)":2016,"Swimming (freestyle)":"Beginner","Treasure Hunt":"Beginner","Lemon & Spoon Race":"Beginner","Sack Race":"Beginner","Sprint (100 M)":"Beginner","Relay Race - 200 M (9-12 years)":"Beginner","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 08:06:42","Full Name":"Jayden Varghese","Gender":"Male","Email address":"sherin.varghese@gmail.com","Age Group":"9-12 years","Flat number (e.g. B2401)":"C002","Year of Birth (YYYY)":2015,"Chess":"Intermediate","Swimming (freestyle)":"Beginner","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 10:43:20","Full Name":"Falah Faisal","Gender":"Male","Email address":"falahfaisal24@gmail.com","Age Group":"Adult (17-60 years)","Flat number (e.g. B2401)":"C702","Year of Birth (YYYY)":1992,"Cricket":"Intermediate","Football":"Intermediate","Table Tennis (Singles)":"Intermediate","Table Tennis (Doubles)":"Intermediate","Table Tennis (Mixed Doubles)":"Intermediate","Lemon & Spoon Race":"Beginner","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 10:45:18","Full Name":"Aarav prasqd","Gender":"Male","Email address":"barsha.singh346@gmail.com","Age Group":"9-12 years","Flat number (e.g. B2401)":"A2603","Year of Birth (YYYY)":2015,"Badminton (Singles)":"Beginner","Basketball":"Intermediate","Cricket":"Advanced","Chess":"Advanced","Carrom":"Intermediate","Football":"Intermediate","Pool (Singles)":"Intermediate","Pickleball (Singles)":"Intermediate","Squash (Singles)":"Intermediate","Pickleball (Doubles)":"Intermediate","Table Tennis (Singles)":"Intermediate","Table Tennis (Doubles)":"Intermediate","Slow Cycling":"Advanced","Treasure Hunt":"Intermediate","Lemon & Spoon Race":"Intermediate","Sack Race":"Intermediate","5 KM Marathon (13-16 years)":"Intermediate","2 KM Run (9-12 years)":"Intermediate","Tug of War":"Intermediate","Throw Ball":"Intermediate","Relay Race - 200 M (9-12 years)":"Intermediate","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 11:57:25","Full Name":"Prerna Triyar","Gender":"Female","Email address":"triyarprerna05@gmail.com","Age Group":"Adult (17-60 years)","Flat number (e.g. B2401)":"A 1703","Year of Birth (YYYY)":1989,"Badminton (Singles)":"Beginner","Badminton (Doubles)":"Beginner","Badminton (Mixed Doubles)":"Beginner","Basketball":"Beginner","Cricket":"Beginner","Chess":"Beginner","Carrom":"Beginner","Football":"Beginner","Pool (Singles)":"Beginner","Pool (Doubles)":"Beginner","Pool (Mixed Doubles)":"Beginner","Pickleball (Singles)":"Beginner","Pickleball (Doubles)":"Beginner","Pickleball (Mixed Doubles)":"Beginner","Table Tennis (Singles)":"Beginner","Table Tennis (Doubles)":"Beginner","Table Tennis (Mixed Doubles)":"Beginner","Swimming (freestyle)":"Beginner","Swimming (backstroke)":"Beginner","Swimming (breaststroke)":"Beginner","Treasure Hunt":"Beginner","Lemon & Spoon Race":"Beginner","Sack Race":"Beginner","5K Marathon (17-60 years)":"Beginner","Tug of War":"Beginner","7 Stones (Lagori/Satoliya)":"Beginner","Relay Race - 400 M (17-60 years)":"Beginner","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 15:29:28","Full Name":"Rishil Nambiar","Gender":"Male","Email address":"rishil.nambiar@gmail.com","Age Group":"Adult (17-60 years)","Flat number (e.g. B2401)":"B803","Year of Birth (YYYY)":1988,"Badminton (Singles)":"Intermediate","Badminton (Doubles)":"Intermediate","Badminton (Mixed Doubles)":"Intermediate","Basketball":"Intermediate","Cricket":"Intermediate","Football":"Intermediate","Pool (Singles)":"Intermediate","Pool (Doubles)":"Intermediate","Pool (Mixed Doubles)":"Intermediate","Pickleball (Singles)":"Beginner","Squash (Singles)":"Intermediate","Pickleball (Doubles)":"Beginner","Pickleball (Mixed Doubles)":"Beginner","Squash (Doubles)":"Intermediate","Squash (Mixed Doubles)":"Intermediate","Swimming (freestyle)":"Beginner","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 17:32:06","Full Name":"Noah Cherian Abraham","Gender":"Male","Email address":"remyaannacherian@gmail.com","Age Group":"9-12 years","Flat number (e.g. B2401)":"D701","Year of Birth (YYYY)":2017,"Badminton (Singles)":"Beginner","Badminton (Doubles)":"Beginner","Basketball":"Intermediate","Football":"Intermediate","Table Tennis (Singles)":"Intermediate","Swimming (freestyle)":"Intermediate","Slow Cycling":"Advanced","Treasure Hunt":"Advanced","Sack Race":"Intermediate","2 KM Run (9-12 years)":"Beginner","Tug of War":"Intermediate","Shot Put":"Intermediate","Sprint (100 M)":"Intermediate","Relay Race - 200 M (9-12 years)":"Intermediate","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 17:36:31","Full Name":"Nathan Cherian Abraham","Gender":"Male","Email address":"remyaannacherian@gmail.com","Age Group":"8 years and below","Flat number (e.g. B2401)":"D701","Year of Birth (YYYY)":2019,"Carrom":"Intermediate","Football":"Intermediate","Swimming (freestyle)":"Beginner","Slow Cycling":"Intermediate","Treasure Hunt":"Intermediate","Lemon & Spoon Race":"Intermediate","Sack Race":"Beginner","1.6 KM Run (8 years and below)":"Beginner","Tug of War":"Beginner","Throw Ball":"Beginner","Sprint (100 M)":"Intermediate","Relay Race - 160 M (8 years and below)":"Intermediate","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 17:56:23","Full Name":"Neil Cherian Abraham","Gender":"Male","Email address":"remyaannacherian@gmail.com","Age Group":"13-16 years","Flat number (e.g. B2401)":"D701","Year of Birth (YYYY)":2013,"Badminton (Singles)":"Intermediate","Badminton (Doubles)":"Intermediate","Basketball":"Intermediate","Cricket":"Intermediate","Chess":"Beginner","Carrom":"Beginner","Football":"Beginner","Pool (Singles)":"Advanced","Pool (Doubles)":"Advanced","Table Tennis (Singles)":"Beginner","Swimming (freestyle)":"Beginner","Slow Cycling":"Advanced","Treasure Hunt":"Intermediate","Lemon & Spoon Race":"Intermediate","3 KM Run (13-16 years)":"Beginner","Tug of War":"Intermediate","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 19:02:34","Full Name":"Karthik Kethineni","Gender":"Male","Email address":"karthikkethineni2712@gmail.com","Age Group":"13-16 years","Flat number (e.g. B2401)":"C-402","Year of Birth (YYYY)":2012,"Badminton (Singles)":"Intermediate","Badminton (Doubles)":"Intermediate","Basketball":"Beginner","Cricket":"Advanced","Chess":"Beginner","Carrom":"Beginner","Football":"Beginner","Pool (Singles)":"Beginner","Pool (Doubles)":"Beginner","Pickleball (Singles)":"Beginner","Squash (Singles)":"Beginner","Squash (Doubles)":"Beginner","Table Tennis (Singles)":"Intermediate","Table Tennis (Doubles)":"Intermediate","2 KM Run (9-12 years)":"Intermediate","Tug of War":"Intermediate","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 19:27:46","Full Name":"Adwita Datt","Gender":"Female","Email address":"shubhanjlisaxena@gmail.com","Age Group":"9-12 years","Flat number (e.g. B2401)":"D-202","Year of Birth (YYYY)":2016,"Badminton (Singles)":"Intermediate","Badminton (Doubles)":"Intermediate","Skating":"Beginner","Slow Cycling":"Beginner","Treasure Hunt":"Intermediate","Lemon & Spoon Race":"Intermediate","Sack Race":"Intermediate","Tug of War":"Intermediate","Throw Ball":"Intermediate","7 Stones (Lagori/Satoliya)":"Beginner","Sprint (100 M)":"Intermediate","Relay Race - 200 M (9-12 years)":"Intermediate","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 19:32:22","Full Name":"Ananya Datt","Gender":"Female","Email address":"shubhanjlisaxena@gmail.com","Age Group":"13-16 years","Flat number (e.g. B2401)":"D-202","Year of Birth (YYYY)":2012,"Badminton (Singles)":"Intermediate","Badminton (Doubles)":"Beginner","Treasure Hunt":"Intermediate","Lemon & Spoon Race":"Beginner","Sack Race":"Beginner","Tug of War":"Intermediate","Throw Ball":"Intermediate","Sprint (100 M)":"Beginner","Relay Race - 400 M (13-16 years)":"Beginner","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 21:21:50","Full Name":"Siddharth Banthia","Gender":"Male","Email address":"j.shaila@gmail.com","Age Group":"9-12 years","Flat number (e.g. B2401)":"B2401","Year of Birth (YYYY)":2018,"Cricket":"Beginner","Chess":"Beginner","Swimming (freestyle)":"Beginner","Slow Cycling":"Beginner","Treasure Hunt":"Beginner","Lemon & Spoon Race":"Beginner","Sack Race":"Beginner","1.6 KM Run (8 years and below)":"Beginner","Tug of War":"Beginner","Relay Race - 160 M (8 years and below)":"Beginner","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 21:24:38","Full Name":"Shalini Banthia","Gender":"Female","Email address":"j.shaila@gmail.com","Age Group":"9-12 years","Flat number (e.g. B2401)":"B2401","Year of Birth (YYYY)":2014,"Badminton (Singles)":"Beginner","Badminton (Doubles)":"Beginner","Basketball":"Beginner","Cricket":"Beginner","Chess":"Beginner","Swimming (freestyle)":"Intermediate","Slow Cycling":"Intermediate","Treasure Hunt":"Intermediate","Lemon & Spoon Race":"Intermediate","Sack Race":"Intermediate","Tug of War":"Beginner","Throw Ball":"Beginner","7 Stones (Lagori/Satoliya)":"Beginner","Sprint (100 M)":"Beginner","Relay Race - 200 M (9-12 years)":"Beginner","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 22:02:35","Full Name":"Martin Thomas George","Gender":"Male","Email address":"tomvgeorge5555@gmail.com","Age Group":"13-16 years","Flat number (e.g. B2401)":"B503","Year of Birth (YYYY)":2011,"Chess":"Intermediate","Carrom":"Intermediate","Football":"Intermediate","Pool (Singles)":"Intermediate","Table Tennis (Singles)":"Beginner","Table Tennis (Doubles)":"Beginner","Swimming (freestyle)":"Advanced","Swimming (backstroke)":"Advanced","Swimming (breaststroke)":"Advanced","Swimming (butterfly)":"Advanced","Slow Cycling":"Intermediate","Treasure Hunt":"Intermediate","Lemon & Spoon Race":"Intermediate","Sack Race":"Beginner","5 KM Marathon (13-16 years)":"Advanced","3 KM Run (13-16 years)":"Advanced","Tug of War":"Intermediate","Shot Put":"Intermediate","Relay Race - 400 M (13-16 years)":"Intermediate","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 22:03:02","Full Name":"Maria Thomas","Gender":"Female","Email address":"mariathomas0537@gmail.com","Age Group":"Adult (17-60 years)","Flat number (e.g. B2401)":"B503","Year of Birth (YYYY)":2007,"Badminton (Singles)":"Beginner","Badminton (Doubles)":"Beginner","Badminton (Mixed Doubles)":"Beginner","Chess":"Intermediate","Carrom":"Beginner","Slow Cycling":"Advanced","Treasure Hunt":"Intermediate","Lemon & Spoon Race":"Intermediate","3 KM Walking Race (17-60)":"Intermediate","Tug of War":"Beginner","Shot Put":"Intermediate","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 22:11:34","Full Name":"Tom Varkey George","Gender":"Male","Email address":"tomvgeorge5555@gmail.com","Age Group":"Adult (17-60 years)","Flat number (e.g. B2401)":"B503","Year of Birth (YYYY)":1972,"Chess":"Advanced","Carrom":"Advanced","Pool (Singles)":"Advanced","Pool (Doubles)":"Advanced","Table Tennis (Singles)":"Intermediate","Table Tennis (Doubles)":"Intermediate","5K Marathon (17-60 years)":"Intermediate","3 KM Walking Race (17-60)":"Advanced","Shot Put":"Intermediate","Sprint (100 M)":"Intermediate","Relay Race - 400 M (17-60 years)":"Intermediate","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 22:18:45","Full Name":"Jessy John Malakaran","Gender":"Female","Email address":"mariathomas0537@gmail.com","Age Group":"Adult (17-60 years)","Flat number (e.g. B2401)":"B503","Year of Birth (YYYY)":1977,"Cricket":"Beginner","Carrom":"Intermediate","Lemon & Spoon Race":"Intermediate","Sack Race":"Beginner","5K Marathon (17-60 years)":"Beginner","3 KM Walking Race (17-60)":"Beginner","Tug of War":"Intermediate","Shot Put":"Beginner","Throw Ball":"Beginner","Relay Race - 400 M (17-60 years)":"Beginner","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 22:25:09","Full Name":"Maria Thomas","Gender":"Female","Email address":"mariathomas0537@gmail.com","Age Group":"Adult (17-60 years)","Flat number (e.g. B2401)":"B503","Year of Birth (YYYY)":2007,"Badminton (Singles)":"Beginner","Badminton (Doubles)":"Beginner","Cricket":"Beginner","Chess":"Intermediate","Carrom":"Beginner","Football":"Intermediate","Pool (Singles)":"Beginner","Pool (Doubles)":"Beginner","Table Tennis (Singles)":"Beginner","Table Tennis (Doubles)":"Beginner","Slow Cycling":"Intermediate","Treasure Hunt":"Intermediate","Lemon & Spoon Race":"Intermediate","Sack Race":"Intermediate","3 KM Walking Race (17-60)":"Beginner","Tug of War":"Intermediate","Shot Put":"Beginner","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 22:27:02","Full Name":"Ayush Kumble","Gender":"Male","Email address":"vijaykumble@gmail.com","Age Group":"9-12 years","Flat number (e.g. B2401)":"D1501","Year of Birth (YYYY)":2014,"Cricket":"Intermediate","Chess":"Beginner","Carrom":"Beginner","Football":"Beginner","Pickleball (Singles)":"Intermediate","Squash (Singles)":"Beginner","Pickleball (Doubles)":"Intermediate","Squash (Doubles)":"Beginner","Squash (Mixed Doubles)":"Beginner","Slow Cycling":"Intermediate","Treasure Hunt":"Intermediate","Lemon & Spoon Race":"Intermediate","Sack Race":"Intermediate","2 KM Run (9-12 years)":"Intermediate","Tug of War":"Intermediate","Shot Put":"Beginner","7 Stones (Lagori/Satoliya)":"Beginner","Sprint (100 M)":"Intermediate","Relay Race - 200 M (9-12 years)":"Intermediate","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-09 23:21:36","Full Name":"Vihaan Srinivasan","Gender":"Male","Email address":"vihaanwalajah@gmail.com","Age Group":"13-16 years","Flat number (e.g. B2401)":"A-603","Year of Birth (YYYY)":2011,"Badminton (Doubles)":"Beginner","Badminton (Mixed Doubles)":"Beginner","Basketball":"Advanced","Cricket":"Advanced","Football":"Beginner","Pool (Singles)":"Intermediate","Pool (Doubles)":"Intermediate","Pickleball (Singles)":"Intermediate","Squash (Singles)":"Beginner","Pickleball (Doubles)":"Intermediate","Squash (Doubles)":"Beginner","Table Tennis (Doubles)":"Beginner","5 KM Marathon (13-16 years)":"Intermediate","Volleyball":"Advanced","7 Stones (Lagori/Satoliya)":"Beginner","Sprint (100 M)":"Intermediate","Relay Race - 400 M (13-16 years)":"Intermediate","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-10 07:54:36","Full Name":"Vijay Kumble","Gender":"Male","Email address":"vijaykumble@gmail.com","Age Group":"Adult (17-60 years)","Flat number (e.g. B2401)":"D1501","Year of Birth (YYYY)":1983,"Badminton (Singles)":"Intermediate","Badminton (Doubles)":"Intermediate","Badminton (Mixed Doubles)":"Intermediate","Basketball":"Beginner","Chess":"Beginner","Carrom":"Intermediate","Pool (Singles)":"Beginner","Pool (Doubles)":"Beginner","Pool (Mixed Doubles)":"Beginner","Pickleball (Singles)":"Intermediate","Squash (Singles)":"Beginner","Pickleball (Doubles)":"Intermediate","Pickleball (Mixed Doubles)":"Intermediate","Table Tennis (Singles)":"Beginner","Table Tennis (Doubles)":"Beginner","Swimming (freestyle)":"Intermediate","Swimming (breaststroke)":"Intermediate","Swimming (butterfly)":"Intermediate","3 KM Walking Race (17-60)":"Intermediate","Tug of War":"Intermediate","7 Stones (Lagori/Satoliya)":"Intermediate","Relay Race - 400 M (17-60 years)":"Intermediate","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-10 13:57:44","Full Name":"Sinu Xavier","Gender":"Female","Email address":"sinuxjames@gmail.com","Age Group":"Adult (17-60 years)","Flat number (e.g. B2401)":"A 401","Year of Birth (YYYY)":1974,"Treasure Hunt":"Beginner","Lemon & Spoon Race":"Beginner","Throw Ball":"Beginner","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-10 19:10:12","Full Name":"Rohan Kurian Xavier","Gender":"Male","Email address":"rohankurianxavierm@gmail.com","Age Group":"Adult (17-60 years)","Flat number (e.g. B2401)":"A 401","Year of Birth (YYYY)":2002,"Badminton (Singles)":"Intermediate","Badminton (Doubles)":"Intermediate","Badminton (Mixed Doubles)":"Intermediate","Basketball":"Advanced","Cricket":"Intermediate","Football":"Intermediate","Pool (Singles)":"Intermediate","Pool (Doubles)":"Intermediate","Squash (Singles)":"Intermediate","Table Tennis (Singles)":"Intermediate","Table Tennis (Doubles)":"Intermediate","Table Tennis (Mixed Doubles)":"Intermediate","Swimming (freestyle)":"Intermediate","Swimming (breaststroke)":"Intermediate","Swimming (butterfly)":"Intermediate","Treasure Hunt":"Intermediate","5K Marathon (17-60 years)":"Intermediate","Tug of War":"Intermediate","Volleyball":"Intermediate","Shot Put":"Intermediate","Relay Race - 400 M (17-60 years)":"Intermediate","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-10 21:42:19","Full Name":"Aashna Kumble","Gender":"Female","Email address":"sarwath.g@gmail.com","Age Group":"9-12 years","Flat number (e.g. B2401)":"D1501","Year of Birth (YYYY)":2017,"Carrom":"Beginner","Swimming (freestyle)":"Beginner","Skating":"Intermediate","Slow Cycling":"Intermediate","Treasure Hunt":"Intermediate","Lemon & Spoon Race":"Intermediate","Sack Race":"Intermediate","2 KM Run (9-12 years)":"Intermediate","Tug of War":"Beginner","Shot Put":"Beginner","Sprint (100 M)":"Beginner","Relay Race - 200 M (9-12 years)":"Beginner","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-12 10:15:01","Full Name":"Aradhana Chonat","Gender":"Female","Email address":"ligi.kurup@gmail.com","Age Group":"9-12 years","Flat number (e.g. B2401)":"C302","Year of Birth (YYYY)":2014,"Basketball":"Intermediate","Slow Cycling":"Beginner","Treasure Hunt":"Beginner","Lemon & Spoon Race":"Beginner","Sack Race":"Beginner","2 KM Run (9-12 years)":"Intermediate","Tug of War":"Beginner","Shot Put":"Beginner","Throw Ball":"Beginner","Sprint (100 M)":"Beginner","Relay Race - 200 M (9-12 years)":"Beginner","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-12 10:35:40","Full Name":"Ligi kurup","Gender":"Female","Email address":"ligi.kurup@gmail.com","Age Group":"Adult (17-60 years)","Flat number (e.g. B2401)":"C302","Year of Birth (YYYY)":1981,"Cricket":"Beginner","Table Tennis (Singles)":"Beginner","Treasure Hunt":"Beginner","Lemon & Spoon Race":"Beginner","Sack Race":"Beginner","5K Marathon (17-60 years)":"Beginner","3 KM Walking Race (17-60)":"Beginner","Tug of War":"Beginner","Shot Put":"Beginner","Throw Ball":"Beginner","Sprint (100 M)":"Beginner","Relay Race - 400 M (17-60 years)":"Beginner","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-12 17:33:45","Full Name":"Remya Anna Cherian","Gender":"Female","Email address":"remyaannacherian@gmail.com","Age Group":"Adult (17-60 years)","Flat number (e.g. B2401)":"D701","Year of Birth (YYYY)":1987,"Carrom":"Beginner","Treasure Hunt":"Intermediate","Lemon & Spoon Race":"Beginner","5K Marathon (17-60 years)":"Beginner","Tug of War":"Beginner","Shot Put":"Beginner","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-12 18:00:40","Full Name":"Cyra Mayya","Gender":"Female","Email address":"vivshylu@gmail.com","Age Group":"9-12 years","Flat number (e.g. B2401)":"D702","Year of Birth (YYYY)":2016,"Badminton (Doubles)":"Beginner","Basketball":"Beginner","Chess":"Beginner","Carrom":"Beginner","Football":"Beginner","Pickleball (Singles)":"Beginner","Squash (Singles)":"Beginner","Pickleball (Doubles)":"Beginner","Pickleball (Mixed Doubles)":"Beginner","Table Tennis (Singles)":"Beginner","Skating":"Beginner","Slow Cycling":"Beginner","Treasure Hunt":"Beginner","Lemon & Spoon Race":"Beginner","Sack Race":"Beginner","1.6 KM Run (8 years and below)":"Beginner","Tug of War":"Beginner","Throw Ball":"Beginner","7 Stones (Lagori/Satoliya)":"Beginner","Sprint (100 M)":"Beginner","Relay Race - 200 M (9-12 years)":"Beginner","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-12 18:06:31","Full Name":"Shailesh Mayya","Gender":"Male","Email address":"vivshylu@gmail.com","Age Group":"Adult (17-60 years)","Flat number (e.g. B2401)":"D702","Year of Birth (YYYY)":1980,"Badminton (Singles)":"Intermediate","Badminton (Doubles)":"Intermediate","Badminton (Mixed Doubles)":"Intermediate","Cricket":"Intermediate","Chess":"Intermediate","Carrom":"Intermediate","Pickleball (Singles)":"Intermediate","Squash (Singles)":"Intermediate","Pickleball (Doubles)":"Intermediate","Squash (Doubles)":"Intermediate","Lemon & Spoon Race":"Intermediate","5K Marathon (17-60 years)":"Intermediate","Tug of War":"Intermediate","Volleyball":"Intermediate","Throw Ball":"Intermediate","7 Stones (Lagori/Satoliya)":"Beginner","Sprint (100 M)":"Intermediate","Relay Race - 400 M (17-60 years)":"Intermediate","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-12 19:01:08","Full Name":"Siddharth Modi","Gender":"Male","Email address":"siddhartha.modi@gmail.com","Age Group":"Adult (17-60 years)","Flat number (e.g. B2401)":"A2201","Year of Birth (YYYY)":1987,"Badminton (Singles)":"Intermediate","Badminton (Doubles)":"Intermediate","Badminton (Mixed Doubles)":"Intermediate","Cricket":"Advanced","Table Tennis (Singles)":"Intermediate","Table Tennis (Doubles)":"Intermediate","Table Tennis (Mixed Doubles)":"Intermediate","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-12 19:30:41","Full Name":"Sakshi Sharma","Gender":"Female","Email address":"sakshi.flyinghigh@gmail.com","Age Group":"Adult (17-60 years)","Flat number (e.g. B2401)":"A2503","Year of Birth (YYYY)":1988,"Swimming (breaststroke)":"Advanced","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-12 19:54:07","Full Name":"Sandeep Cheekati","Gender":"Male","Email address":"sandeep.cheekati@gmail.com","Age Group":"Adult (17-60 years)","Flat number (e.g. B2401)":"D 501","Year of Birth (YYYY)":1980,"Badminton (Singles)":"Intermediate","Badminton (Doubles)":"Intermediate","Badminton (Mixed Doubles)":"Intermediate","Cricket":"Intermediate","Pickleball (Singles)":"Beginner","Squash (Singles)":"Beginner","Pickleball (Doubles)":"Beginner","Pickleball (Mixed Doubles)":"Beginner","Squash (Doubles)":"Beginner","Squash (Mixed Doubles)":"Beginner","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-12 20:00:18","Full Name":"Aaryan Raju","Gender":"Male","Email address":"aaryanraju17@gmail.com","Age Group":"Adult (17-60 years)","Flat number (e.g. B2401)":"B 3103","Year of Birth (YYYY)":2006,"Badminton (Singles)":"Beginner","Badminton (Doubles)":"Intermediate","Badminton (Mixed Doubles)":"Intermediate","Table Tennis (Singles)":"Intermediate","Table Tennis (Doubles)":"Intermediate","Table Tennis (Mixed Doubles)":"Intermediate","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."},{"Timestamp":"2026-09-12 20:10:29","Full Name":"Krishnaraj Chonat","Gender":"Male","Email address":"ligi.kurup@gmail.com","Age Group":"Adult (17-60 years)","Flat number (e.g. B2401)":"C302","Year of Birth (YYYY)":1973,"Table Tennis (Doubles)":"Beginner","Tug of War":"Beginner","Please check":"Enrolment is at the participant’s own responsibility. Participants are required to ensure that they are physically fit and adequately prepared to take part in the tournament. The SGS Sports Event Organizing Committee and Managing Committee shall not be held responsible or liable for any injury or accident occurring during the tournament."}]}</script>
+<script>
+(function(){
+  "use strict";
+
+  /* ==================================================================
+     MASTER SHEET
+     Paste the Apps Script web-app URL between the quotes below and
+     everyone who opens this page reads and writes the same Google
+     Sheet. Leave it empty and the app stays entirely local.
+     It must end in /exec — see apps-script/Code.gs.
+     ================================================================== */
+  var SHEET_API = "https://script.google.com/macros/s/AKfycby9yMNiLZlm_hdfWK7oPRlM8lhIMRrSJmMw-0CquxzmAGSmBwqcSJHRjw2Gdn9TpYDzLw/exec";
+
+  var STORE_KEY = "sgs-sports-randomizer/v3";
+  var API_KEY = "sgs-sports-randomizer/api";
+  var WHO_KEY = "sgs-sports-randomizer/who";
+  var EVENT_YEAR = 2026;
+
+  var TEAMS = [
+    {key:"panthers", name:"Panthers", color:"var(--panthers)", deep:"var(--panthers-deep)"},
+    {key:"titans",   name:"Titans",   color:"var(--titans)",   deep:"var(--titans-deep)"},
+    {key:"stormers", name:"Stormers", color:"var(--stormers)", deep:"var(--stormers-deep)"},
+    {key:"falcons",  name:"Falcons",  color:"var(--falcons)",  deep:"var(--falcons-deep)"}
+  ];
+  var BRACKETS = [
+    {key:"u8",     label:"8 & under", short:"U8",    max:8,   tag:"8 years and below"},
+    {key:"u12",    label:"9–12",      short:"9-12",  max:12,  tag:"9-12 years"},
+    {key:"u16",    label:"13–16",     short:"13-16", max:16,  tag:"13-16 years"},
+    {key:"adult",  label:"17–60",     short:"17-60", max:60,  tag:"Adult (17-60 years)"},
+    {key:"senior", label:"61 & over", short:"61+",   max:200, tag:"Senior Citizens (61 years and above)"}
+  ];
+  var LEVELS = ["Beginner", "Intermediate", "Advanced"];
+
+  var EVENT_GROUPS = [
+    {name:"Racquet & paddle", re:/badminton|table tennis|squash|pickleball/i},
+    {name:"Team games",       re:/basketball|cricket|football|volleyball|throw ball|tug of war|stones|lagori/i},
+    {name:"Table & board",    re:/chess|carrom|pool/i},
+    {name:"Swimming",         re:/swimming/i},
+    {name:"Athletics",        re:/run|marathon|walk|sprint|relay|shot put|cycling|skating/i},
+    {name:"Fun & family",     re:/.*/}
+  ];
+
+  function teamOf(key){
+    for (var i = 0; i < TEAMS.length; i++) if (TEAMS[i].key === key) return TEAMS[i];
+    return {key:null, name:"Unassigned", color:"var(--ink-3)", deep:"var(--ink-2)"};
+  }
+  function bracketFromText(txt, yob){
+    var t = String(txt || "").toLowerCase();
+    if (t.indexOf("61") > -1 || t.indexOf("senior") > -1) return "senior";
+    if (t.indexOf("17") > -1 || t.indexOf("adult") > -1) return "adult";
+    if (t.indexOf("13") > -1) return "u16";
+    if (t.indexOf("9") > -1) return "u12";
+    if (t.indexOf("8") > -1) return "u8";
+    var age = yob ? EVENT_YEAR - Number(yob) : NaN;
+    if (!isNaN(age)) for (var i = 0; i < BRACKETS.length; i++) if (age <= BRACKETS[i].max) return BRACKETS[i].key;
+    return "adult";
+  }
+  function bracket(k){
+    for (var i = 0; i < BRACKETS.length; i++) if (BRACKETS[i].key === k) return BRACKETS[i];
+    return BRACKETS[3];
+  }
+  function bracketLabel(k){ return bracket(k).label; }
+  function isAdvanced(l){ return String(l || "").toLowerCase().indexOf("adv") === 0; }
+
+  // an event label like "2 KM Run (9-12 years)" is restricted to that bracket
+  function eventBracket(label){
+    var t = String(label).toLowerCase();
+    if (!/\(/.test(t)) return null;
+    if (/61 years|and above/.test(t)) return "senior";
+    if (/17-60|17 - 60/.test(t)) return "adult";
+    if (/13-16|13 - 16/.test(t)) return "u16";
+    if (/9-12|9 - 12/.test(t)) return "u12";
+    if (/8 years and below|8 and below/.test(t)) return "u8";
+    return null;
+  }
+
+  /* ---------------- schema + ingest ---------------- */
+
+  var schema = null;   // {headers, cols:{name,gender,email,age,flat,yob}, sportCols:[], otherCols:[]}
+  var state = { players: [], uid: 0, drawnAt: null };
+  var history = [];
+  var journal = [];          // every change, with who made it and when
+  var jid = 0;
+
+  // Identity that survives a round trip through the sheet, where ids are
+  // regenerated. Name + email + flat is unique enough for a residents' roster.
+  function opKey(p){
+    return [String(p.name || "").toLowerCase().trim(),
+            String(p.email || "").toLowerCase().trim(),
+            String(p.flat || "").toLowerCase().trim()].join("|");
+  }
+  function byOpKey(k){
+    for (var i = 0; i < state.players.length; i++) if (opKey(state.players[i]) === k) return state.players[i];
+    return null;
+  }
+
+  // Every change is recorded twice: once in words for the Change log, and
+  // once as an operation that can be replayed onto someone else's newer draw.
+  var pending = [];          // {entry, op} not yet accepted by the sheet
+
+  function logChange(act, detail, op){
+    jid++;
+    var entry = {
+      i: String(Date.now()) + "-" + jid + "-" + Math.random().toString(36).slice(2, 7),
+      t: new Date().toISOString(),
+      by: who() || "unnamed",
+      a: act,
+      d: detail
+    };
+    journal.push(entry);
+    if (journal.length > 500) journal = journal.slice(-500);
+    pending.push({entry: entry, op: op || {o: "replace"}});
+    scheduleAutoSave();
+  }
+
+  function serialisePlayer(p){
+    return {
+      name:p.name, gender:p.gender, email:p.email, flat:p.flat, yob:p.yob,
+      ageGroup:p.ageRaw, bracket:p.bracket, sports:p.sports, extra:p.extra,
+      added:!!p.added, addedBy:p.addedBy, addedAt:p.addedAt, team:p.team
+    };
+  }
+
+  // The operations that would turn `current` into `target`. Used by Undo so a
+  // reversal is merge-safe rather than a wholesale overwrite of the sheet.
+  function diffToOps(target, current){
+    var ops = [], cur = {}, tgt = {};
+    current.forEach(function(p){ cur[opKey(p)] = p; });
+    target.forEach(function(p){ tgt[opKey(p)] = p; });
+    target.forEach(function(p){
+      var k = opKey(p), c = cur[k];
+      if (!c) ops.push({o:"add", pl:serialisePlayer(p)});
+      else if (c.team !== p.team) ops.push({o:"mv", k:k, to:p.team});
+    });
+    current.forEach(function(p){
+      if (!tgt[opKey(p)]) ops.push({o:"rm", k:opKey(p)});
+    });
+    return ops;
+  }
+
+  function replayOp(op){
+    if (!op) return;
+    if (op.o === "multi") {
+      (op.ops || []).forEach(replayOp);
+      return;
+    }
+    if (op.o === "add") {
+      if (byOpKey(opKey(op.pl))) return;        // already there, nothing to do
+      var p = makePlayer(op.pl);
+      p.team = op.pl.team || null;
+      p.added = !!op.pl.added;
+      state.players.push(p);
+    } else if (op.o === "rm") {
+      state.players = state.players.filter(function(x){ return opKey(x) !== op.k; });
+    } else if (op.o === "mv") {
+      var m = byOpKey(op.k);
+      if (m) m.team = op.to;
+    } else if (op.o === "sw") {
+      var a = byOpKey(op.a), b = byOpKey(op.b);
+      if (a && b) { var t = a.team; a.team = b.team; b.team = t; }
+    } else if (op.o === "draw") {
+      state.players.forEach(function(x){
+        var k = opKey(x);
+        if (Object.prototype.hasOwnProperty.call(op.t, k)) x.team = op.t[k];
+      });
+    }
+    // op.o === "replace" (import / restore) cannot be merged; the caller decides
+  }
+  function teamMap(){
+    var m = {};
+    state.players.forEach(function(p){ m[opKey(p)] = p.team; });
+    return m;
+  }
+
+  // Public link, no login — so we ask once per browser and stamp everything
+  // with that name. It is a record of who did what, not a security control.
+  function askWho(then){
+    var dlg = document.getElementById("whoDlg");
+    var input = document.getElementById("whoName");
+    input.value = "";
+    document.getElementById("whoGo").onclick = function(){
+      var n = input.value.trim();
+      if (!n) { toast("Please enter a name."); input.focus(); return; }
+      setWho(n);
+      closeDialog(dlg);
+      renderStrip();
+      if (then) then();
+    };
+    input.onkeydown = function(ev){
+      if (ev.key === "Enter") { ev.preventDefault(); document.getElementById("whoGo").click(); }
+    };
+    if (typeof dlg.showModal === "function") dlg.showModal(); else dlg.setAttribute("open", "");
+    input.focus();
+  }
+  function needWho(then){
+    if (who()) return true;
+    askWho(then);
+    return false;
+  }
+
+  function findCol(headers, options){
+    for (var i = 0; i < headers.length; i++){
+      var h = String(headers[i] || "").toLowerCase().trim();
+      for (var j = 0; j < options.length; j++) if (h.indexOf(options[j]) > -1) return headers[i];
+    }
+    return null;
+  }
+
+  function buildSchema(headers, rows){
+    var cols = {
+      name:   findCol(headers, ["full name", "name"]),
+      gender: findCol(headers, ["gender", "sex"]),
+      email:  findCol(headers, ["email"]),
+      age:    findCol(headers, ["age group", "age category"]),
+      flat:   findCol(headers, ["flat", "unit", "apartment"]),
+      yob:    findCol(headers, ["year of birth", "yob"])
+    };
+    var core = [];
+    for (var k in cols) if (cols[k]) core.push(cols[k]);
+
+    // A column is an event column when every value in it is an expertise level.
+    // A column nobody entered is empty, so fall back to the header: anything
+    // that is not an obvious admin field is treated as an event.
+    var levelRe = /^(beginner|intermediate|advanced)$/i;
+    var adminRe = /timestamp|please check|consent|mobile|phone|score|remark|note/i;
+    var junkRe = /^(column\d*|__EMPTY.*|unnamed.*|)$/i;
+    var sportCols = [], otherCols = [];
+    headers.forEach(function(h){
+      if (core.indexOf(h) > -1) return;
+      if (junkRe.test(String(h).trim())) return;   // blank spare columns carry nothing
+      var seen = 0, levels = 0;
+      rows.forEach(function(r){
+        var v = r[h];
+        if (v == null || String(v).trim() === "") return;
+        seen++;
+        if (levelRe.test(String(v).trim())) levels++;
+      });
+      var isSport = seen ? (levels === seen) : !adminRe.test(h);
+      (isSport ? sportCols : otherCols).push(h);
+    });
+    return {headers: headers.slice(), cols: cols, sportCols: sportCols, otherCols: otherCols};
+  }
+
+  function ingest(headers, rows){
+    schema = buildSchema(headers, rows);
+    var c = schema.cols;
+    var map = {}, order = [];
+    rows.forEach(function(r){
+      var nm = c.name ? r[c.name] : null;
+      if (nm == null || String(nm).trim() === "") return;
+      nm = String(nm).replace(/\s+/g, " ").trim();
+      var key = nm.toLowerCase() + "|" + (c.email ? String(r[c.email] || "").toLowerCase().trim() : "");
+      if (!map[key]) {
+        order.push(key);
+        map[key] = {
+          name: nm,
+          gender: c.gender ? String(r[c.gender] || "").trim() : "",
+          email: c.email ? String(r[c.email] || "").trim() : "",
+          flat: c.flat ? String(r[c.flat] || "").replace(/\s+/g, "").toUpperCase() : "",
+          yob: c.yob ? r[c.yob] : "",
+          ageRaw: c.age ? String(r[c.age] || "").trim() : "",
+          sports: {}, extra: {}, added: false
+        };
+      }
+      var rec = map[key];
+      schema.sportCols.forEach(function(h){
+        var v = r[h];
+        if (v == null || String(v).trim() === "") return;
+        if (!rec.sports[h]) rec.sports[h] = String(v).trim();
+      });
+      schema.otherCols.forEach(function(h){
+        var v = r[h];
+        if (v == null || String(v).trim() === "") return;
+        if (rec.extra[h] == null) rec.extra[h] = v;
+      });
+    });
+    state.uid = 0;
+    state.players = order.map(function(k){ return makePlayer(map[k]); });
+    state.drawnAt = null;
+    history = [];
+  }
+
+  function makePlayer(raw){
+    return {
+      id: "p" + (++state.uid),
+      name: raw.name, gender: raw.gender || "", email: raw.email || "",
+      flat: raw.flat || "", yob: raw.yob || "", ageRaw: raw.ageRaw || "",
+      bracket: raw.bracket || bracketFromText(raw.ageRaw, raw.yob),
+      sports: raw.sports || {}, extra: raw.extra || {},
+      added: !!raw.added,
+      addedBy: raw.addedBy || "", addedAt: raw.addedAt || "",
+      team: null
+    };
+  }
+  function advancedList(p){
+    var out = [];
+    for (var k in p.sports) if (isAdvanced(p.sports[k])) out.push(k);
+    return out.sort();
+  }
+  function sportCount(p){ return Object.keys(p.sports).length; }
+
+  /* ---------------- persistence ---------------- */
+
+  function save(){
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify({
+        v: 3, schema: schema, drawnAt: state.drawnAt, uid: state.uid,
+        players: state.players, journal: journal
+      }));
+    } catch (e) { /* storage unavailable — the page still works for this session */ }
+  }
+  function restore(){
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      if (!raw) return false;
+      var d = JSON.parse(raw);
+      if (!d || d.v !== 3 || !d.schema || !d.players || !d.players.length) return false;
+      var sc = d.schema.sportCols || [];
+      var degenerate = sc.length < 3 || sc.some(function(h){ return /level of expertise|^sport$/i.test(h); });
+      if (degenerate) { localStorage.removeItem(STORE_KEY); return false; }
+      schema = d.schema;
+      state.players = d.players;
+      state.uid = d.uid || d.players.length;
+      state.drawnAt = d.drawnAt || null;
+      journal = d.journal || [];
+      history = [];
+      return true;
+    } catch (e) { return false; }
+  }
+
+  /* ---------------- draw ---------------- */
+
+  function shuffle(a){
+    for (var i = a.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  function generate(){
+    pushHistory();
+    var byGender = document.getElementById("optGender").checked;
+    state.players.forEach(function(p){ p.team = null; });
+
+    var counts = {};
+    TEAMS.forEach(function(t){ counts[t.key] = {total:0, bracket:{}, strata:{}}; });
+    var strata = {};
+    state.players.forEach(function(p){
+      var key = p.bracket + "|" + (byGender ? String(p.gender).toLowerCase() : "all");
+      (strata[key] = strata[key] || []).push(p);
+    });
+    Object.keys(strata).forEach(function(sk){
+      shuffle(strata[sk]).forEach(function(p){
+        var best = null, bestScore = null;
+        shuffle(TEAMS.slice()).forEach(function(t){
+          var c = counts[t.key];
+          var score = [ c.strata[sk] || 0, c.bracket[p.bracket] || 0, c.total ];
+          if (!bestScore || score[0] < bestScore[0] ||
+              (score[0] === bestScore[0] && score[1] < bestScore[1]) ||
+              (score[0] === bestScore[0] && score[1] === bestScore[1] && score[2] < bestScore[2])) {
+            best = t; bestScore = score;
+          }
+        });
+        p.team = best.key;
+        var c = counts[best.key];
+        c.total++;
+        c.bracket[p.bracket] = (c.bracket[p.bracket] || 0) + 1;
+        c.strata[sk] = (c.strata[sk] || 0) + 1;
+      });
+    });
+    state.drawnAt = new Date().toISOString();
+    render();
+  }
+
+  function dealAnimation(){
+    var body = document.body;
+    body.classList.remove("dealing");
+    void body.offsetWidth;          // restart the animation
+    body.classList.add("dealing");
+    setTimeout(function(){ body.classList.remove("dealing"); }, 900);
+  }
+
+  /* ---------------- history ---------------- */
+
+  function snapshot(){
+    return { drawnAt: state.drawnAt, players: JSON.parse(JSON.stringify(state.players)) };
+  }
+  function pushHistory(){
+    history.push(snapshot());
+    if (history.length > 40) history.shift();
+  }
+  function undo(){
+    if (!history.length) return;
+    var s = history.pop();
+    var ops = diffToOps(s.players, state.players);
+    state.players = s.players;
+    state.drawnAt = s.drawnAt;
+    // An undo is a change like any other — it has to reach the sheet, or the
+    // next poll would quietly pull the undone version straight back.
+    if (ops.length) {
+      logChange("undo", "Undid the last change (" + ops.length +
+                (ops.length === 1 ? " adjustment)" : " adjustments)"),
+                {o:"multi", ops:ops});
+    }
+    render();
+    toast("Undone");
+  }
+
+  /* ---------------- small helpers ---------------- */
+
+  function el(tag, cls, text){
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function findPlayer(id){
+    for (var i = 0; i < state.players.length; i++) if (state.players[i].id === id) return state.players[i];
+    return null;
+  }
+  function closeDialog(d){
+    try { if (typeof d.close === "function") d.close(); else d.removeAttribute("open"); }
+    catch (e) { d.removeAttribute("open"); }
+  }
+  var toastTimer = null;
+  function toast(msg){
+    var t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("on");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove("on"); }, 4200);
+  }
+  var flashIds = [];
+  function flash(ids){ flashIds = ids; }
+  function fmtDate(iso){
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d)) return "";
+    return d.toLocaleDateString(undefined, {day:"numeric", month:"short", year:"numeric"}) +
+           ", " + d.toLocaleTimeString(undefined, {hour:"2-digit", minute:"2-digit"});
+  }
+
+  /* ---------------- rendering ---------------- */
+
+  function playerNode(p){
+    var node = el("div", "player");
+    node.dataset.id = p.id;
+    node.draggable = true;
+
+    var row = el("div", "prow");
+    var nameEl = el("span", "pname", p.name);
+    if (p.added) {
+      var d = el("span", "newdot");
+      d.title = "Added in the randomizer" +
+                (p.addedBy ? " by " + p.addedBy : "") +
+                (p.addedAt ? " on " + fmtDate(p.addedAt) : "");
+      nameEl.appendChild(d);
+    }
+    row.appendChild(nameEl);
+
+    var n = sportCount(p);
+    var meta = [];
+    if (p.flat) meta.push(p.flat);
+    meta.push(String(p.gender || "").charAt(0).toUpperCase() || "–");
+    if (n) meta.push(n + "ev");
+    var metaEl = el("span", "pmeta", meta.join(" · "));
+    if (n) {
+      var lines = [];
+      for (var k in p.sports) lines.push(k + " — " + p.sports[k]);
+      metaEl.title = lines.sort().join("\n");
+    }
+    row.appendChild(metaEl);
+
+    var acts = el("div", "pacts");
+    var swapBtn = el("button", "iconbtn", "⇄");
+    swapBtn.type = "button";
+    swapBtn.title = "Swap " + p.name + " with another player";
+    swapBtn.setAttribute("aria-label", "Swap " + p.name + " with another player");
+    swapBtn.addEventListener("click", function(ev){ ev.stopPropagation(); openSwap(p); });
+    acts.appendChild(swapBtn);
+
+    var moveBtn = el("button", "iconbtn", "→");
+    moveBtn.type = "button";
+    moveBtn.title = "Move " + p.name + " to another team";
+    moveBtn.setAttribute("aria-label", "Move " + p.name + " to another team");
+    moveBtn.addEventListener("click", function(ev){ ev.stopPropagation(); openMove(p); });
+    acts.appendChild(moveBtn);
+
+    var del = el("button", "iconbtn danger", "✕");
+    del.type = "button";
+    del.title = "Remove " + p.name + " from the roster";
+    del.setAttribute("aria-label", "Remove " + p.name + " from the roster");
+    del.addEventListener("click", function(ev){ ev.stopPropagation(); openDelete(p); });
+    acts.appendChild(del);
+    row.appendChild(acts);
+    node.appendChild(row);
+
+    var adv = advancedList(p);
+    if (adv.length) {
+      var sp = el("div", "sports");
+      adv.forEach(function(s){ sp.appendChild(el("span", "sp", s)); });
+      node.appendChild(sp);
+    }
+
+    node.addEventListener("dragstart", function(ev){
+      ev.dataTransfer.setData("text/plain", p.id);
+      ev.dataTransfer.effectAllowed = "move";
+      node.classList.add("dragging");
+    });
+    node.addEventListener("dragend", function(){ node.classList.remove("dragging"); });
+    if (flashIds.indexOf(p.id) > -1) node.classList.add("flash");
+    return node;
+  }
+
+  function moveTo(id, teamKey, quiet){
+    var p = findPlayer(id);
+    if (!p || p.team === teamKey) return;
+    if (!needWho(function(){ moveTo(id, teamKey, quiet); })) return;
+    pushHistory();
+    logChange("move", p.name + ": " + teamOf(p.team).name + " → " + teamOf(teamKey).name,
+              {o:"mv", k:opKey(p), to:teamKey});
+    p.team = teamKey;
+    flash([p.id]);
+    render();
+    if (!quiet) toast(p.name + " → " + teamOf(teamKey).name);
+  }
+  function swapPlayers(idA, idB){
+    var a = findPlayer(idA), b = findPlayer(idB);
+    if (!a || !b) return;
+    if (!needWho(function(){ swapPlayers(idA, idB); })) return;
+    pushHistory();
+    logChange("swap", a.name + " (" + teamOf(a.team).name + ") ⇄ " +
+                      b.name + " (" + teamOf(b.team).name + ")",
+              {o:"sw", a:opKey(a), b:opKey(b)});
+    var t = a.team; a.team = b.team; b.team = t;
+    flash([a.id, b.id]);
+    render();
+    toast(a.name + " ⇄ " + b.name);
+  }
+  function dropZone(node, teamKey){
+    node.addEventListener("dragover", function(ev){ ev.preventDefault(); node.classList.add("dragover"); });
+    node.addEventListener("dragleave", function(){ node.classList.remove("dragover"); });
+    node.addEventListener("drop", function(ev){
+      ev.preventDefault();
+      node.classList.remove("dragover");
+      var id = ev.dataTransfer.getData("text/plain");
+      if (id) moveTo(id, teamKey);
+    });
+  }
+
+  function renderTeams(){
+    var grid = document.getElementById("grid");
+    grid.innerHTML = "";
+    TEAMS.forEach(function(t){
+      var card = el("section", "team");
+      card.style.setProperty("--team", t.color);
+      card.style.setProperty("--team-deep", t.deep);
+
+      var head = el("div", "team-head");
+      var nameRow = el("div", "team-name");
+      nameRow.appendChild(el("span", null, t.name));
+      var members = state.players.filter(function(p){ return p.team === t.key; });
+      nameRow.appendChild(el("span", "team-count", String(members.length)));
+      head.appendChild(nameRow);
+
+      var tally = el("div", "tally");
+      BRACKETS.forEach(function(b){
+        var pool = state.players.filter(function(p){ return p.bracket === b.key; }).length;
+        if (!pool) return;
+        var n = members.filter(function(p){ return p.bracket === b.key; }).length;
+        tally.appendChild(el("span", n ? "has" : "", b.short + " " + n));
+      });
+      head.appendChild(tally);
+      card.appendChild(head);
+
+      var body = el("div", "team-body");
+      if (!members.length) body.appendChild(el("div", "empty-note", "No players yet"));
+      else BRACKETS.forEach(function(b){
+        var group = members.filter(function(p){ return p.bracket === b.key; });
+        if (!group.length) return;
+        group.sort(function(x, y){ return x.name.localeCompare(y.name); });
+        body.appendChild(el("div", "agehdr", b.label));
+        group.forEach(function(p){ body.appendChild(playerNode(p)); });
+      });
+      card.appendChild(body);
+      dropZone(card, t.key);
+      grid.appendChild(card);
+    });
+  }
+
+  function renderBench(){
+    var body = document.getElementById("benchBody");
+    body.innerHTML = "";
+    var list = state.players.filter(function(p){ return !p.team; });
+    list.sort(function(x, y){ return x.name.localeCompare(y.name); });
+    document.getElementById("benchCount").textContent = String(list.length);
+    if (!list.length) body.appendChild(el("div", "empty-note", "Everyone is on a team."));
+    else list.forEach(function(p){ body.appendChild(playerNode(p)); });
+  }
+
+  function renderStrip(){
+    var box = document.getElementById("brackets");
+    box.innerHTML = "";
+    BRACKETS.forEach(function(b){
+      var n = state.players.filter(function(p){ return p.bracket === b.key; }).length;
+      var chip = el("span", "bchip" + (n ? "" : " empty"));
+      chip.appendChild(el("span", null, b.label));
+      chip.appendChild(el("b", null, String(n)));
+      box.appendChild(chip);
+    });
+
+    var total = state.players.length;
+    var assigned = state.players.filter(function(p){ return p.team; }).length;
+    var added = state.players.filter(function(p){ return p.added; }).length;
+    var entries = state.players.reduce(function(n, p){ return n + sportCount(p); }, 0);
+
+    document.getElementById("statPlayers").textContent = String(total);
+    document.getElementById("statPlaced").textContent = String(assigned);
+    document.getElementById("statBench").textContent = String(total - assigned);
+    document.getElementById("statEvents").textContent = String(entries);
+    document.getElementById("statDrawn").textContent = state.drawnAt ? fmtDate(state.drawnAt) : "Not drawn";
+
+    document.getElementById("rosterLine").textContent =
+      total + " " + (total === 1 ? "player" : "players") +
+      (added ? " (" + added + " added here)" : "") +
+      " · " + assigned + " placed · " + (total - assigned) + " unassigned";
+
+    var status = document.getElementById("balanceStatus");
+    var text = document.getElementById("balanceText");
+    status.classList.remove("ok", "warn");
+    if (!assigned) { text.textContent = "Not drawn"; }
+    else {
+      var worst = 0;
+      BRACKETS.forEach(function(b){
+        var pool = state.players.filter(function(p){ return p.bracket === b.key; }).length;
+        if (!pool) return;
+        var nums = TEAMS.map(function(t){
+          return state.players.filter(function(p){ return p.team === t.key && p.bracket === b.key; }).length;
+        });
+        var spread = Math.max.apply(null, nums) - Math.min.apply(null, nums);
+        if (spread > worst) worst = spread;
+      });
+      if (worst <= 1) { status.classList.add("ok"); text.textContent = "Balanced across all age groups"; }
+      else { status.classList.add("warn"); text.textContent = "Uneven — widest gap is " + worst + " players"; }
+    }
+
+    var lockLabel = document.getElementById("lockLabel");
+    var lockDetail = document.getElementById("lockDetail");
+    var linked = !!apiUrl();
+
+    document.getElementById("syncBtn").hidden = !linked;
+    document.getElementById("saveSheetBtn").hidden = !linked;
+
+    var dot = document.getElementById("liveDot");
+    // .hidden is an HTMLElement property; an <svg> needs the attribute
+    var lockIcon = document.getElementById("lockIcon");
+    if (linked) lockIcon.setAttribute("hidden", ""); else lockIcon.removeAttribute("hidden");
+    dot.hidden = !linked;
+    dot.className = "livedot" + (sync.state === "saving" ? " busy" :
+                                 (sync.state === "offline" || sync.state === "conflict") ? " off" : "");
+
+    var me = document.getElementById("whoami");
+    me.hidden = !who();
+    if (who()) {
+      me.textContent = "Signed in as " + who();
+      me.title = "Click to change the name recorded against your changes";
+    }
+
+    if (linked) {
+      lockLabel.textContent = "Shared with everyone";
+      if (sync.note) {
+        lockDetail.textContent = sync.note;
+      } else if (sync.state === "saving") {
+        lockDetail.textContent = "Saving your change to the sheet…";
+      } else if (sync.state === "offline") {
+        lockDetail.textContent = "Can't reach the sheet — your change is held here and will go out when it's back" +
+                                 (sync.lastErr ? " (" + sync.lastErr + ")" : "") + ".";
+      } else if (sync.state === "conflict") {
+        lockDetail.textContent = "Someone saved at the same moment. Press Save now to publish your change.";
+      } else {
+        lockDetail.textContent = "Changes save by themselves and reach everyone. Last change " +
+          (sync.savedAt ? fmtDate(sync.savedAt) : "—") +
+          (sync.savedBy ? " by " + sync.savedBy : "") + ".";
+      }
+    } else if (sync.note) {
+      lockLabel.textContent = "Local only";
+      lockDetail.textContent = sync.note;
+    } else if (state.drawnAt) {
+      lockLabel.textContent = "Draw locked";
+      lockDetail.textContent = "Saved in this browser. Reloading keeps these exact teams — only Generate teams or a new import replaces them.";
+    } else {
+      lockLabel.textContent = "No draw yet";
+      lockDetail.textContent = "Press Generate teams to make the draw. It is then saved and survives a reload.";
+    }
+  }
+
+  function render(){
+    renderTeams();
+    renderBench();
+    renderStrip();
+    document.getElementById("undoBtn").disabled = !history.length;
+    flashIds = [];
+    save();
+  }
+
+  /* ---------------- swap dialog ---------------- */
+
+  var swapDlg = document.getElementById("swapDlg");
+  var swapState = { from: null, to: null };
+
+  function openSwap(p){
+    if (!needWho(function(){ openSwap(p); })) return;
+    swapState.from = p.id;
+    swapState.to = null;
+    document.getElementById("swapSearch").value = "";
+    document.getElementById("swapSameAge").checked = true;
+
+    var subj = document.getElementById("swapSubject");
+    subj.innerHTML = "";
+    var t = teamOf(p.team);
+    subj.style.setProperty("--team", t.color);
+    var pill = el("span", "pill");
+    pill.appendChild(el("span", "dot"));
+    pill.appendChild(el("span", null, t.name));
+    subj.appendChild(pill);
+    subj.appendChild(el("strong", null, p.name));
+    subj.appendChild(el("span", "pmeta", [bracketLabel(p.bracket), p.flat, p.gender].filter(Boolean).join(" · ")));
+
+    document.getElementById("swapSub").textContent =
+      "Choose who " + p.name.split(" ")[0] + " trades places with — both players move at once.";
+    renderSwapList();
+    if (typeof swapDlg.showModal === "function") swapDlg.showModal(); else swapDlg.setAttribute("open", "");
+  }
+
+  function renderSwapList(){
+    var from = findPlayer(swapState.from);
+    var list = document.getElementById("swapList");
+    var q = document.getElementById("swapSearch").value.trim().toLowerCase();
+    var sameAge = document.getElementById("swapSameAge").checked;
+    list.innerHTML = "";
+    if (!from) return;
+
+    var pool = state.players.filter(function(p){
+      if (p.id === from.id || p.team === from.team) return false;
+      if (sameAge && p.bracket !== from.bracket) return false;
+      if (q && (p.name + " " + p.flat).toLowerCase().indexOf(q) === -1) return false;
+      return true;
+    });
+    if (!pool.length) {
+      list.appendChild(el("div", "none-note",
+        sameAge ? "Nobody in this age group on another team. Untick “same age group only” to widen the search."
+                : "No players match that search."));
+      updateSwapFoot();
+      return;
+    }
+    TEAMS.concat([{key:null, name:"Unassigned", color:"var(--ink-3)"}]).forEach(function(t){
+      var group = pool.filter(function(p){ return p.team === t.key; });
+      if (!group.length) return;
+      group.sort(function(x, y){ return x.name.localeCompare(y.name); });
+      list.appendChild(el("div", "opt-group", t.name));
+      group.forEach(function(p){
+        var b = el("button", "opt");
+        b.type = "button";
+        b.style.setProperty("--team", t.color);
+        b.setAttribute("role", "radio");
+        b.setAttribute("aria-checked", swapState.to === p.id ? "true" : "false");
+        b.appendChild(el("span", "tick", "✓"));
+        b.appendChild(el("span", "nm", p.name));
+        b.appendChild(el("span", "pmeta",
+          [bracketLabel(p.bracket), p.flat, String(p.gender || "").charAt(0)].filter(Boolean).join(" · ")));
+        b.addEventListener("click", function(){
+          swapState.to = (swapState.to === p.id) ? null : p.id;
+          renderSwapList();
+        });
+        list.appendChild(b);
+      });
+    });
+    updateSwapFoot();
+  }
+  function updateSwapFoot(){
+    var from = findPlayer(swapState.from);
+    var to = swapState.to ? findPlayer(swapState.to) : null;
+    document.getElementById("swapGo").disabled = !to;
+    document.getElementById("swapCaution").classList.toggle("on", !!(from && to && from.bracket !== to.bracket));
+  }
+  document.getElementById("swapSearch").addEventListener("input", renderSwapList);
+  document.getElementById("swapSameAge").addEventListener("change", function(){ swapState.to = null; renderSwapList(); });
+  document.getElementById("swapCancel").addEventListener("click", function(){ closeDialog(swapDlg); });
+  document.getElementById("swapGo").addEventListener("click", function(){
+    if (!swapState.to) return;
+    swapPlayers(swapState.from, swapState.to);
+    closeDialog(swapDlg);
+  });
+
+  /* ---------------- move dialog ---------------- */
+
+  var moveDlg = document.getElementById("moveDlg");
+  function openMove(p){
+    if (!needWho(function(){ openMove(p); })) return;
+    document.getElementById("moveTitle").textContent = "Move " + p.name;
+    document.getElementById("moveSub").textContent = bracketLabel(p.bracket) + " · currently " + teamOf(p.team).name;
+    var grid = document.getElementById("moveGrid");
+    grid.innerHTML = "";
+    TEAMS.concat([{key:null, name:"Unassigned", color:"var(--ink-3)"}]).forEach(function(t){
+      var b = el("button", "movebtn");
+      b.type = "button";
+      b.style.setProperty("--team", t.color);
+      b.disabled = (p.team === t.key);
+      b.appendChild(el("span", "dot"));
+      var wrap = el("span");
+      wrap.appendChild(document.createTextNode(t.name));
+      var n = state.players.filter(function(x){ return x.team === t.key; }).length;
+      var sameAge = state.players.filter(function(x){ return x.team === t.key && x.bracket === p.bracket; }).length;
+      wrap.appendChild(el("small", null, n + " players · " + sameAge + " in " + bracketLabel(p.bracket)));
+      b.appendChild(wrap);
+      b.addEventListener("click", function(){ moveTo(p.id, t.key); closeDialog(moveDlg); });
+      grid.appendChild(b);
+    });
+    if (typeof moveDlg.showModal === "function") moveDlg.showModal(); else moveDlg.setAttribute("open", "");
+  }
+  document.getElementById("moveCancel").addEventListener("click", function(){ closeDialog(moveDlg); });
+
+  /* ---------------- delete dialog ---------------- */
+
+  var delDlg = document.getElementById("delDlg");
+  var delPending = null;
+
+  function openDelete(p){
+    if (!needWho(function(){ openDelete(p); })) return;
+    delPending = p.id;
+    document.getElementById("delTitle").textContent = "Remove " + p.name + "?";
+    document.getElementById("delSub").textContent =
+      "They leave the roster entirely — the draw, the team sheet and the export.";
+
+    var subj = document.getElementById("delSubject");
+    subj.innerHTML = "";
+    var t = teamOf(p.team);
+    subj.style.setProperty("--team", t.color);
+    var pill = el("span", "pill");
+    pill.appendChild(el("span", "dot"));
+    pill.appendChild(el("span", null, t.name));
+    subj.appendChild(pill);
+    subj.appendChild(el("strong", null, p.name));
+    subj.appendChild(el("span", "pmeta",
+      [bracketLabel(p.bracket), p.flat, p.gender].filter(Boolean).join(" · ")));
+
+    var what = document.getElementById("delWhat");
+    what.innerHTML = "";
+    var n = sportCount(p);
+    if (p.team) {
+      var left = state.players.filter(function(x){ return x.team === p.team; }).length - 1;
+      var sameAge = state.players.filter(function(x){
+        return x.team === p.team && x.bracket === p.bracket;
+      }).length - 1;
+      what.appendChild(el("li", null,
+        t.name + " drops to " + left + " players · " + sameAge + " left in " + bracketLabel(p.bracket)));
+    }
+    what.appendChild(el("li", null,
+      n ? n + (n === 1 ? " registered event goes with them" : " registered events go with them")
+        : "No events registered"));
+    if (p.added) what.appendChild(el("li", null,
+      "Added by hand" + (p.addedBy ? " by " + p.addedBy : "") +
+      (p.addedAt ? " on " + fmtDate(p.addedAt) : "") + " — not in the registration sheet"));
+    else what.appendChild(el("li", null, "Re-importing the sheet brings them back"));
+    what.appendChild(el("li", null, "Undo (Ctrl+Z) reverses this"));
+
+    if (typeof delDlg.showModal === "function") delDlg.showModal(); else delDlg.setAttribute("open", "");
+    document.getElementById("delCancel").focus();
+  }
+
+  document.getElementById("delCancel").addEventListener("click", function(){
+    delPending = null;
+    closeDialog(delDlg);
+  });
+  document.getElementById("delGo").addEventListener("click", function(){
+    var p = delPending ? findPlayer(delPending) : null;
+    delPending = null;
+    closeDialog(delDlg);
+    if (!p) return;
+    pushHistory();
+    var where = teamOf(p.team).name;
+    logChange("remove", p.name + " removed from " + where +
+              (p.added ? " (was added by " + (p.addedBy || "someone") + ")" : ""),
+              {o:"rm", k:opKey(p)});
+    state.players = state.players.filter(function(x){ return x.id !== p.id; });
+    render();
+    toast(p.name + " removed from " + where + " · Ctrl+Z to undo");
+  });
+
+  /* ---------------- add player dialog ---------------- */
+
+  var addDlg = document.getElementById("addDlg");
+  var addInputs = {};
+  var addExtraInputs = {};
+  var addEvents = [];   // [{sport, level}] — grows as the player picks events
+
+  // The registration form asks for a mobile number; older exports predate that
+  // column, so create it once and it flows into the export like any other field.
+  function phoneCol(){
+    var existing = findCol(schema.headers, ["mobile", "phone", "contact number"]);
+    if (existing) return existing;
+    var label = "Mobile number";
+    if (schema.headers.indexOf(label) === -1) {
+      var after = schema.cols.email || schema.cols.flat || schema.cols.name;
+      var at = schema.headers.indexOf(after);
+      if (at > -1) schema.headers.splice(at + 1, 0, label);
+      else schema.headers.push(label);
+      schema.otherCols.push(label);
+    }
+    return label;
+  }
+
+  function shortExtraCols(){
+    // carry through short free-text columns (mobile number, etc.) but not
+    // timestamps or the long consent paragraph
+    return schema.otherCols.filter(function(h){
+      if (/timestamp/i.test(h)) return false;
+      if (/mobile|phone|contact number/i.test(h)) return false;   // asked for explicitly below
+      var longest = 0;
+      state.players.forEach(function(p){
+        var v = p.extra[h];
+        if (v != null) longest = Math.max(longest, String(v).length);
+      });
+      return longest <= 60 && h.length <= 48;
+    });
+  }
+
+  function buildAddDialog(){
+    var f = document.getElementById("addFields");
+    f.innerHTML = "";
+    addInputs = {}; addExtraInputs = {};
+    addEvents = [{sport:"", level:""}];
+
+    function field(key, label, type, required){
+      var d = el("div", "field" + (required ? " req" : ""));
+      var id = "add_" + key.replace(/\W/g, "_");
+      var l = el("label", null, label); l.htmlFor = id;
+      var i = document.createElement("input");
+      i.type = type || "text"; i.id = id;
+      i.addEventListener("keydown", function(ev){
+        if (ev.key === "Enter") { ev.preventDefault(); submitAdd(); }
+      });
+      d.appendChild(l); d.appendChild(i); f.appendChild(d);
+      return i;
+    }
+    function select(key, label, options, required){
+      var d = el("div", "field" + (required ? " req" : ""));
+      var id = "add_" + key;
+      var l = el("label", null, label); l.htmlFor = id;
+      var sel = document.createElement("select"); sel.id = id;
+      options.forEach(function(o){
+        var op = document.createElement("option");
+        op.value = o.value; op.textContent = o.label;
+        sel.appendChild(op);
+      });
+      d.appendChild(l); d.appendChild(sel); f.appendChild(d);
+      return sel;
+    }
+
+    addInputs.name  = field("name", "Full name", "text", true);
+    addInputs.phone = field("phone", "Mobile number", "tel", true);
+    addInputs.phone.setAttribute("inputmode", "tel");
+    addInputs.phone.placeholder = "e.g. 98765 43210";
+    addInputs.flat  = field("flat", "Flat number", "text", false);
+    addInputs.gender = select("gender", "Gender", [
+      {value:"Male", label:"Male"}, {value:"Female", label:"Female"}, {value:"Other", label:"Other"}
+    ], true);
+    addInputs.age = select("age", "Age group", BRACKETS.map(function(b){
+      return {value:b.key, label:b.tag};
+    }), true);
+    addInputs.age.value = "adult";   // the largest group — least clicking for the common case
+    addInputs.yob = field("yob", "Year of birth", "number", false);
+    addInputs.yob.min = 1900; addInputs.yob.max = EVENT_YEAR;
+    addInputs.team = select("team", "Add to team", TEAMS.map(function(t){
+      var n = state.players.filter(function(p){ return p.team === t.key; }).length;
+      return {value:t.key, label:t.name + " (" + n + ")"};
+    }).concat([{value:"", label:"Unassigned — place later"}]), true);
+
+    shortExtraCols().forEach(function(h){
+      addExtraInputs[h] = field("x_" + h, h, "text", false);
+    });
+
+    addInputs.age.addEventListener("change", renderAddEvents);
+    addInputs.team.addEventListener("change", updateSubmitLabel);
+    updateSubmitLabel();
+    renderAddEvents();
+  }
+
+  function updateSubmitLabel(){
+    var key = addInputs.team ? addInputs.team.value : "";
+    document.getElementById("addSubmit").textContent =
+      key ? "Add to " + teamOf(key).name : "Add to Unassigned";
+  }
+
+  function eventsForBracket(){
+    var br = addInputs.age.value;
+    var filter = document.getElementById("addAgeFilter").checked;
+    return schema.sportCols.filter(function(h){
+      var eb = eventBracket(h);
+      return !(filter && eb && eb !== br);
+    });
+  }
+
+  function renderAddEvents(){
+    var host = document.getElementById("addEvents");
+    host.innerHTML = "";
+    var available = eventsForBracket();
+    var taken = {};
+    addEvents.forEach(function(e){ if (e.sport) taken[e.sport] = 1; });
+
+    // an event picked earlier but not open to the new age group is dropped
+    addEvents.forEach(function(e){
+      if (e.sport && available.indexOf(e.sport) === -1) { e.sport = ""; e.level = ""; }
+    });
+
+    if (!addEvents.length) {
+      host.appendChild(el("div", "evempty", "No events yet — add the first one below."));
+    }
+
+    addEvents.forEach(function(entry, i){
+      var row = el("div", "evline");
+      row.appendChild(el("span", "idx", String(i + 1)));
+
+      var sp = document.createElement("select");
+      sp.className = "sport" + (entry.sport ? " set" : "");
+      sp.setAttribute("aria-label", "Sport " + (i + 1));
+      var blank = document.createElement("option");
+      blank.value = ""; blank.textContent = "Choose a sport or event…";
+      sp.appendChild(blank);
+      EVENT_GROUPS.forEach(function(g){
+        var items = available.filter(function(h){
+          if (entry.sport !== h && taken[h]) return false;
+          for (var j = 0; j < EVENT_GROUPS.length; j++) if (EVENT_GROUPS[j].re.test(h)) return EVENT_GROUPS[j].name === g.name;
+          return false;
+        });
+        if (!items.length) return;
+        var og = document.createElement("optgroup");
+        og.label = g.name;
+        items.forEach(function(h){
+          var o = document.createElement("option");
+          o.value = h; o.textContent = h;
+          if (h === entry.sport) o.selected = true;
+          og.appendChild(o);
+        });
+        sp.appendChild(og);
+      });
+      sp.addEventListener("change", function(){
+        entry.sport = sp.value;
+        if (entry.sport && !entry.level) entry.level = "";
+        renderAddEvents();
+      });
+      row.appendChild(sp);
+
+      var lv = document.createElement("select");
+      lv.className = "level" + (entry.level ? " set" : "");
+      lv.setAttribute("aria-label", "Expertise level " + (i + 1));
+      var lb = document.createElement("option");
+      lb.value = ""; lb.textContent = "Expertise…";
+      lv.appendChild(lb);
+      LEVELS.forEach(function(l){
+        var o = document.createElement("option");
+        o.value = l; o.textContent = l;
+        if (l === entry.level) o.selected = true;
+        lv.appendChild(o);
+      });
+      lv.addEventListener("change", function(){
+        entry.level = lv.value;
+        lv.classList.toggle("set", !!lv.value);
+        updatePicked();
+      });
+      row.appendChild(lv);
+
+      var drop = el("button", "drop", "✕");
+      drop.type = "button";
+      drop.title = "Remove this event";
+      drop.setAttribute("aria-label", "Remove event " + (i + 1));
+      drop.addEventListener("click", function(){
+        addEvents.splice(i, 1);
+        renderAddEvents();
+      });
+      row.appendChild(drop);
+      host.appendChild(row);
+    });
+
+    var btn = document.getElementById("addEventBtn");
+    var last = addEvents[addEvents.length - 1];
+    var room = addEvents.filter(function(e){ return e.sport; }).length < available.length;
+    btn.disabled = (addEvents.length > 0 && last && !last.sport) || !room;
+    btn.textContent = addEvents.length ? "+ Add another sport" : "+ Add a sport";
+    updatePicked();
+  }
+
+  function updatePicked(){
+    var done = addEvents.filter(function(e){ return e.sport && e.level; }).length;
+    var open = eventsForBracket().length;
+    document.getElementById("addPicked").textContent =
+      done + " of " + open + " events selected";
+  }
+
+  document.getElementById("addEventBtn").addEventListener("click", function(){
+    addEvents.push({sport:"", level:""});
+    renderAddEvents();
+    var rows = document.querySelectorAll("#addEvents .evline select.sport");
+    if (rows.length) rows[rows.length - 1].focus();
+  });
+  document.getElementById("addAgeFilter").addEventListener("change", renderAddEvents);
+
+  document.getElementById("addBtn").addEventListener("click", function(){
+    if (!needWho(function(){ document.getElementById("addBtn").click(); })) return;
+    buildAddDialog();
+    if (typeof addDlg.showModal === "function") addDlg.showModal(); else addDlg.setAttribute("open", "");
+    addInputs.name.focus();
+  });
+  document.getElementById("addCancel").addEventListener("click", function(){ closeDialog(addDlg); });
+
+  function submitAdd(){
+    var name = addInputs.name.value.trim();
+    if (!name) {
+      toast("Enter the player's full name.");
+      addInputs.name.focus();
+      return;
+    }
+    var phone = addInputs.phone.value.trim();
+    if (!phone) {
+      toast("Enter a mobile number — it is needed to reach the player on event day.");
+      addInputs.phone.focus();
+      return;
+    }
+    if ((phone.replace(/\D/g, "") || "").length < 7) {
+      toast("That mobile number looks too short — check it and try again.");
+      addInputs.phone.focus();
+      return;
+    }
+    var missing = addEvents.filter(function(en){ return en.sport && !en.level; });
+    if (missing.length) {
+      toast("Pick an expertise level for " + missing[0].sport + " — or remove that row.");
+      return;
+    }
+
+    var sports = {};
+    addEvents.forEach(function(en){ if (en.sport && en.level) sports[en.sport] = en.level; });
+    var extra = {};
+    for (var h in addExtraInputs) {
+      var v = addExtraInputs[h].value.trim();
+      if (v) extra[h] = v;
+    }
+    extra[phoneCol()] = phone;
+    var brKey = addInputs.age.value;
+    var teamKey = addInputs.team.value || null;
+    var yob = parseInt(addInputs.yob.value, 10);
+
+    if (!needWho(function(){ submitAdd(); })) return;
+    closeDialog(addDlg);   // close first, so a later error can never trap the dialog
+
+    try {
+      pushHistory();
+      var p = makePlayer({
+        name: name.replace(/\s+/g, " "),
+        gender: addInputs.gender.value,
+        email: "",
+        flat: addInputs.flat.value.trim().replace(/\s+/g, "").toUpperCase(),
+        yob: isNaN(yob) ? "" : yob,
+        ageRaw: bracket(brKey).tag,
+        bracket: brKey,
+        sports: sports, extra: extra, added: true,
+        addedBy: who(), addedAt: new Date().toISOString()
+      });
+      p.team = teamKey;
+      state.players.push(p);
+      var nEv = Object.keys(sports).length;
+      logChange("add", p.name + " added to " + teamOf(teamKey).name +
+                " · " + nEv + (nEv === 1 ? " event" : " events") + " · " +
+                bracket(brKey).label + " · flat " + (p.flat || "—"),
+                {o:"add", pl:serialisePlayer(p)});
+      flash([p.id]);
+      render();
+      var n = Object.keys(sports).length;
+      toast(p.name + " added to " + teamOf(teamKey).name + " · " + n + (n === 1 ? " event" : " events"));
+    } catch (err) {
+      toast("Could not add that player: " + (err && err.message ? err.message : "unknown error"));
+    }
+  }
+  document.getElementById("addSubmit").addEventListener("click", submitAdd);
+
+  /* ---------------- import ---------------- */
+
+  function normaliseHeaders(hs){
+    return hs.map(function(h){
+      return String(h == null ? "" : h).replace(/\s+/g, " ").trim().replace(/^\[|\]$/g, "").trim();
+    });
+  }
+  function countEventCols(headers, rows){
+    var levelRe = /^(beginner|intermediate|advanced)$/i;
+    var n = 0;
+    headers.forEach(function(h){
+      if (!h || /^(column\d*|__EMPTY.*)$/i.test(h)) return;
+      var seen = 0, levels = 0;
+      rows.forEach(function(r){
+        var v = r[h];
+        if (v == null || String(v).trim() === "") return;
+        seen++;
+        if (levelRe.test(String(v).trim())) levels++;
+      });
+      if (seen && levels === seen) n++;
+    });
+    return n;
+  }
+
+  // A registration export can come in two shapes: the wide form response
+  // (one column per event) or a long "working" tab (one row per person per
+  // sport). Pick the sheet with the most event columns; pivot the long one.
+  function importWorkbook(wb){
+    var best = null;
+    wb.SheetNames.forEach(function(sn){
+      var ws = wb.Sheets[sn];
+      var rows = XLSX.utils.sheet_to_json(ws, {defval:null});
+      if (!rows.length) return;
+      var raw = XLSX.utils.sheet_to_json(ws, {header:1, range:0})[0] || Object.keys(rows[0]);
+      var headers = normaliseHeaders(raw);
+      var norm = rows.map(function(r){
+        var o = {};
+        Object.keys(r).forEach(function(k){ o[normaliseHeaders([k])[0]] = r[k]; });
+        return o;
+      });
+      if (!findCol(headers, ["full name", "name"])) return;
+      var score = countEventCols(headers, norm);
+      if (!best || score > best.score || (score === best.score && norm.length > best.rows.length)) {
+        best = {name: sn, headers: headers, rows: norm, score: score};
+      }
+    });
+    if (!best) { toast("No column with player names was found in that file."); return; }
+
+    var sportCol = findCol(best.headers, ["sport", "event"]);
+    var levelCol = findCol(best.headers, ["level of expertise", "expertise", "level"]);
+    if (best.score < 3 && sportCol && levelCol) {
+      var p = pivotLong(best.headers, best.rows, sportCol, levelCol);
+      best.headers = p.headers; best.rows = p.rows;
+    }
+    ingest(best.headers, best.rows);
+    logChange("import", state.players.length + " players imported from “" + best.name + "”");
+    render();
+    toast(state.players.length + " players imported from “" + best.name +
+          "” · " + schema.sportCols.length + " events — press Generate teams to draw.");
+  }
+
+  // Long format -> wide: one row per person, one column per distinct sport.
+  function pivotLong(headers, rows, sportCol, levelCol){
+    var nameCol = findCol(headers, ["full name", "name"]);
+    var emailCol = findCol(headers, ["email"]);
+    var keep = headers.filter(function(h){
+      return h && h !== sportCol && h !== levelCol && !/^(column\d*|__EMPTY.*)$/i.test(h);
+    });
+    var sports = [], seenSport = {};
+    var map = {}, order = [];
+    rows.forEach(function(r){
+      var nm = r[nameCol];
+      if (nm == null || String(nm).trim() === "") return;
+      var key = String(nm).replace(/\s+/g, " ").trim().toLowerCase() + "|" +
+                (emailCol ? String(r[emailCol] || "").toLowerCase().trim() : "");
+      if (!map[key]) { order.push(key); map[key] = {}; keep.forEach(function(h){ map[key][h] = r[h]; }); }
+      var sp = r[sportCol], lv = r[levelCol];
+      if (sp == null || String(sp).trim() === "") return;
+      sp = String(sp).replace(/\s+/g, " ").trim().replace(/^\[|\]$/g, "").trim();
+      if (!seenSport[sp]) { seenSport[sp] = 1; sports.push(sp); }
+      if (map[key][sp] == null && lv != null && String(lv).trim() !== "") map[key][sp] = String(lv).trim();
+    });
+    sports.sort();
+    return {headers: keep.concat(sports), rows: order.map(function(k){ return map[k]; })};
+  }
+
+  /* ---------------- export ---------------- */
+
+  // The consent paragraph and blank spare columns add nothing to a team sheet.
+  function isNoiseCol(h){
+    if (!h || /^(column\d*|__EMPTY.*)$/i.test(String(h).trim())) return true;
+    if (/please check|enrol|enroll|responsibilit|disclaimer|consent|terms/i.test(h)) return true;
+    var longest = 0;
+    state.players.forEach(function(p){
+      var v = p.extra[h];
+      if (v != null) longest = Math.max(longest, String(v).length);
+    });
+    return longest > 120;
+  }
+  var AUDIT_COLS = ["Source", "Added by", "Added on"];
+  function exportHeaders(){
+    var h = schema.headers.filter(function(x){
+      if (schema.sportCols.indexOf(x) > -1) return true;
+      return !isNoiseCol(x) && AUDIT_COLS.indexOf(x) === -1;
+    });
+    return h.concat(AUDIT_COLS);
+  }
+  function rowFor(p, headers){
+    var c = schema.cols;
+    return headers.map(function(h){
+      if (h === c.name) return p.name;
+      if (h === c.gender) return p.gender;
+      if (h === c.email) return p.email;
+      if (h === c.age) return p.ageRaw || bracket(p.bracket).tag;
+      if (h === c.flat) return p.flat;
+      if (h === c.yob) return p.yob;
+      if (h === "Source") return p.added ? "Manual entry" : "Registration form";
+      if (h === "Added by") return p.added ? (p.addedBy || "not recorded") : "";
+      if (h === "Added on") return p.added ? fmtDate(p.addedAt) : "";
+      if (schema.sportCols.indexOf(h) > -1) return p.sports[h] || "";
+      var v = p.extra[h];
+      return v == null ? "" : v;
+    });
+  }
+  function aoaFor(members, headers){
+    var aoa = [headers];
+    BRACKETS.forEach(function(b){
+      members.filter(function(p){ return p.bracket === b.key; })
+        .sort(function(x, y){ return x.name.localeCompare(y.name); })
+        .forEach(function(p){ aoa.push(rowFor(p, headers)); });
+    });
+    return aoa;
+  }
+  function summaryAoa(){
+    var aoa = [["Team"].concat(BRACKETS.map(function(b){ return b.label; })).concat(["Total", "Added here"])];
+    TEAMS.concat([{key:null, name:"Unassigned"}]).forEach(function(t){
+      var members = state.players.filter(function(p){ return p.team === t.key; });
+      aoa.push([t.name].concat(BRACKETS.map(function(b){
+        return members.filter(function(p){ return p.bracket === b.key; }).length;
+      })).concat([members.length, members.filter(function(p){ return p.added; }).length]));
+    });
+    aoa.push([]);
+    aoa.push(["Drawn", state.drawnAt ? fmtDate(state.drawnAt) : "not drawn"]);
+    aoa.push(["Written", fmtDate(new Date().toISOString())]);
+    aoa.push(["By", who() || "not recorded"]);
+    return aoa;
+  }
+
+  // The same tables the export writes, as plain arrays — the workbook and
+  // the Google Sheet are then guaranteed to agree.
+  function manualAoa(){
+    var aoa = [["Name", "Gender", "Age group", "Flat", "Mobile", "Team",
+                "Events", "Advanced in", "All events (level)", "Added by", "Added on"]];
+    state.players.filter(function(p){ return p.added; })
+      .sort(function(x, y){ return String(x.addedAt).localeCompare(String(y.addedAt)); })
+      .forEach(function(p){
+        var evs = [];
+        for (var k in p.sports) evs.push(k + " (" + p.sports[k] + ")");
+        var phone = "";
+        for (var h in p.extra) if (/mobile|phone|contact number/i.test(h)) phone = p.extra[h];
+        aoa.push([p.name, p.gender, bracket(p.bracket).label, p.flat, phone,
+                  teamOf(p.team).name, sportCount(p),
+                  advancedList(p).join("; "), evs.sort().join("; "),
+                  p.addedBy || "not recorded", fmtDate(p.addedAt)]);
+      });
+    return aoa;
+  }
+
+  function journalAoa(){
+    var aoa = [["Id", "When", "Who", "Action", "Detail"]];
+    journal.forEach(function(j){
+      aoa.push([j.i, fmtDate(j.t), j.by, j.a, j.d]);
+    });
+    return aoa;
+  }
+
+  window.__buildTabs = function(){ return buildTabs(); };   // test hook
+  function buildTabs(){
+    var headers = exportHeaders();
+    var tabs = [{name:"Summary", aoa:summaryAoa()}];
+    TEAMS.forEach(function(t){
+      var members = state.players.filter(function(p){ return p.team === t.key; });
+      tabs.push({name:t.name, aoa:aoaFor(members, headers)});
+    });
+    tabs.push({name:"Unassigned", aoa:aoaFor(state.players.filter(function(p){ return !p.team; }), headers)});
+    tabs.push({name:"Manual entries", aoa:manualAoa()});
+    tabs.push({name:"Change log", aoa:journalAoa(), mode:"append", keyCol:0});
+    return tabs;
+  }
+
+  function buildWorkbook(){
+    var headers = exportHeaders();
+    var wb = XLSX.utils.book_new();
+    buildTabs().forEach(function(tab){
+      var ws = XLSX.utils.aoa_to_sheet(tab.aoa);
+      ws["!cols"] = tab.aoa[0].map(function(h){
+        return {wch: Math.min(38, Math.max(10, String(h).length + 2))};
+      });
+      if (tab.name !== "Summary") {
+        ws["!freeze"] = {xSplit:"0", ySplit:"1"};
+        ws["!autofilter"] = {ref: XLSX.utils.encode_range({
+          s:{r:0,c:0}, e:{r:Math.max(tab.aoa.length-1,1), c:tab.aoa[0].length-1}})};
+      }
+      XLSX.utils.book_append_sheet(wb, ws, tab.name);
+    });
+    return wb;
+  }
+
+  function saveFile(filename, blob){
+    // The claude.ai artifact viewer sandboxes the page and blocks any download
+    // the page starts itself, so ask the platform to hand over the file there.
+    // Everywhere else (a local file, GitHub Pages) the anchor download works.
+    var viaPlatform = null;
+    try {
+      if (window.claude && typeof window.claude.use === "function") viaPlatform = window.claude.use("downloads");
+    } catch (e) { viaPlatform = null; }
+
+    function fallback(){
+      try {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url; a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 2000);
+        toast("Exported " + filename);
+      } catch (err) {
+        toast("This viewer blocked the download. Open the app from its own HTML file and export again.");
+      }
+    }
+
+    if (!viaPlatform || typeof viaPlatform.then !== "function") { fallback(); return; }
+    viaPlatform.then(function(dl){
+      if (!dl) { fallback(); return; }
+      dl.save({filename: filename, data: blob}).then(function(){
+        toast("Exported " + filename);
+      })["catch"](function(err){
+        var code = err && err.code;
+        if (code === "declined") toast("Export cancelled.");
+        else if (code === "rate_limited") toast("A save prompt is already open — finish that one first.");
+        else fallback();
+      });
+    })["catch"](fallback);
+  }
+
+  var exportDlg = document.getElementById("exportDlg");
+
+  function openExport(){
+    var linked = !!apiUrl();
+    var gs = document.getElementById("exGsheet");
+    gs.disabled = !linked;
+    document.getElementById("exGsheetNote").textContent = linked
+      ? "Creates a new spreadsheet in Drive and gives you the link."
+      : "Needs the master sheet connected first — see Sheet settings.";
+    document.getElementById("exResult").hidden = true;
+    document.getElementById("exCopy").hidden = true;
+    document.getElementById("exOpen").hidden = true;
+    if (typeof exportDlg.showModal === "function") exportDlg.showModal(); else exportDlg.setAttribute("open", "");
+  }
+
+  function exportToGoogleSheet(){
+    var url = apiUrl();
+    if (!url) { toast("Connect the master sheet first — Sheet settings."); return; }
+    if (sync.busy) { toast("Still finishing the last request…"); return; }
+
+    var btn = document.getElementById("exGsheet");
+    btn.disabled = true;
+    document.getElementById("exGsheetNote").textContent = "Building the spreadsheet in Drive…";
+    sync.busy = true;
+
+    var d = new Date();
+    var stamp = d.toLocaleDateString(undefined, {day:"numeric", month:"short", year:"numeric"}) +
+                ", " + d.toLocaleTimeString(undefined, {hour:"2-digit", minute:"2-digit"});
+    var payload = {
+      action: "export",
+      by: who() || "unnamed",
+      name: "SGS Teams — " + stamp + (who() ? " (" + who() + ")" : ""),
+      tabs: buildTabs()
+    };
+
+    fetch(url, {method:"POST", body: JSON.stringify(payload)})
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        sync.busy = false;
+        btn.disabled = false;
+        document.getElementById("exGsheetNote").textContent =
+          "Creates a new spreadsheet in Drive and gives you the link.";
+        if (!data || !data.ok) throw new Error(data && data.error ? data.error : "Drive refused the request");
+
+        var box = document.getElementById("exResult");
+        box.hidden = false;
+        document.getElementById("exUrl").value = data.url;
+        document.getElementById("exHint").textContent = data.shared
+          ? data.tabs + " tabs written · anyone with the link can view it."
+          : data.tabs + " tabs written · it is private to the sheet's owner, who can share it from Drive.";
+        var open = document.getElementById("exOpen");
+        open.hidden = false;
+        open.onclick = function(){ window.open(data.url, "_blank", "noopener"); };
+        document.getElementById("exCopy").hidden = false;
+        toast("Google Sheet created — " + data.tabs + " tabs.");
+      })["catch"](function(err){
+        sync.busy = false;
+        btn.disabled = false;
+        document.getElementById("exGsheetNote").textContent =
+          "Creates a new spreadsheet in Drive and gives you the link.";
+        toast("Could not create the sheet: " + (err && err.message ? err.message : "unknown error"));
+      });
+  }
+
+  document.getElementById("exClose").addEventListener("click", function(){ closeDialog(exportDlg); });
+  document.getElementById("exXlsx").addEventListener("click", function(){
+    closeDialog(exportDlg);
+    exportTeams();
+  });
+  document.getElementById("exGsheet").addEventListener("click", exportToGoogleSheet);
+  document.getElementById("exCopy").addEventListener("click", function(){
+    var out = document.getElementById("exUrl");
+    out.select();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(out.value).then(
+        function(){ toast("Link copied."); },
+        function(){ toast("Copy blocked here — select the link and copy it by hand."); });
+    } else {
+      try { document.execCommand("copy"); toast("Link copied."); }
+      catch (e) { toast("Select the link and copy it by hand."); }
+    }
+  });
+
+  function exportTeams(){
+    if (typeof XLSX === "undefined") {
+      toast("The spreadsheet library did not load — check the connection and reload.");
+      return;
+    }
+    try {
+      var wb = buildWorkbook();
+      var out = XLSX.write(wb, {bookType:"xlsx", type:"array"});
+      var blob = new Blob([out], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+      var d = new Date();
+      var stamp = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+      saveFile("SGS-Teams-" + stamp + ".xlsx", blob);
+    } catch (e) {
+      toast("Export failed: " + (e && e.message ? e.message : "unknown error"));
+    }
+  }
+
+  /* ---------------- master sheet ----------------
+     With SHEET_API set, the Google Sheet is the single source of truth:
+     the page pulls the current draw on open and pushes a new one when
+     someone presses Save to sheet. */
+
+  function apiUrl(){
+    if (SHEET_API) return SHEET_API;
+    try { return localStorage.getItem(API_KEY) || ""; } catch (e) { return ""; }
+  }
+  function who(){
+    try { return localStorage.getItem(WHO_KEY) || ""; } catch (e) { return ""; }
+  }
+  function setWho(name){
+    try { localStorage.setItem(WHO_KEY, name); } catch (e) {}
+  }
+
+  var sync = {
+    savedAt: null, savedBy: null, busy: false, note: "",
+    rev: null,          // the sheet revision this browser is based on
+    state: "idle",      // idle | saving | saved | offline | conflict
+    lastErr: ""
+  };
+  var saveTimer = null, pollTimer = null;
+  var AUTOSAVE_MS = 1500;     // settle time after the last change
+  var POLL_MS = 30000;        // how often an idle tab checks for someone else's work
+
+  function setSyncNote(note){
+    sync.note = note || "";
+    renderStrip();
+  }
+  function syncState(st, err){
+    sync.state = st;
+    sync.lastErr = err || "";
+    renderStrip();
+  }
+
+  function applySheetPayload(d){
+    sync.savedAt = d.savedAt || null;
+    sync.savedBy = d.savedBy || null;
+    if (typeof d.rev === "number") sync.rev = d.rev;
+  }
+
+  function loadFromSheet(quiet){
+    var url = apiUrl();
+    if (!url) return Promise.resolve(false);
+    sync.busy = true;
+    return fetch(url + (url.indexOf("?") > -1 ? "&" : "?") + "ts=" + Date.now())
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        sync.busy = false;
+        if (!d || !d.ok) throw new Error(d && d.error ? d.error : "the sheet refused the request");
+        applySheetPayload(d);
+        if (!d.hasDraw || !d.state) {
+          syncState("idle");
+          setSyncNote("Master sheet is empty — your first change publishes this draw to everyone.");
+          return false;
+        }
+        applyShared(JSON.parse(d.state));
+        setSyncNote("");
+        syncState("saved");
+        if (!quiet) toast("Loaded the current teams from the sheet.");
+        return true;
+      })["catch"](function(err){
+        sync.busy = false;
+        syncState("offline", err && err.message ? err.message : "unknown error");
+        if (!quiet) toast("Could not reach the sheet: " + (err && err.message ? err.message : "unknown error"));
+        return false;
+      });
+  }
+
+  function savePayload(){
+    return {
+      action: "save",
+      by: who() || "unnamed",
+      baseRev: sync.rev,
+      drawnAt: state.drawnAt,
+      state: JSON.stringify({v:1, m:"f", d:state.drawnAt, s:schema, p:state.players, j:journal}),
+      tabs: buildTabs()
+    };
+  }
+
+  // Push whatever this browser now holds. If the sheet moved on underneath us,
+  // take the newer draw, replay our own pending changes on top, and try once more.
+  function pushToSheet(attempt){
+    var url = apiUrl();
+    if (!url) return Promise.resolve(false);
+    attempt = attempt || 1;
+    sync.busy = true;
+    syncState("saving");
+
+    var mine = pending.slice();
+    return fetch(url, {method:"POST", body: JSON.stringify(savePayload())})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if (d && d.conflict) {
+          if (attempt >= 3 || !d.state) {
+            sync.busy = false;
+            syncState("conflict");
+            toast("Someone else is saving at the same time — press Save now to try again.");
+            return false;
+          }
+          // rebase: their draw first, then our changes on top
+          applySheetPayload(d);
+          applyShared(JSON.parse(d.state));
+          var mergeable = true;
+          mine.forEach(function(it){
+            if (it.op && it.op.o === "replace") mergeable = false;
+          });
+          if (!mergeable) {
+            sync.busy = false;
+            syncState("conflict");
+            toast((d.savedBy || "Someone") + " published a different roster. Yours was not saved — review and redo it.");
+            pending = [];
+            render();
+            return false;
+          }
+          mine.forEach(function(it){
+            journal.push(it.entry);
+            replayOp(it.op);
+          });
+          render();
+          return pushToSheet(attempt + 1);
+        }
+
+        sync.busy = false;
+        if (!d || !d.ok) throw new Error(d && d.error ? d.error : "the sheet refused the write");
+        applySheetPayload(d);
+        sync.savedBy = who() || "unnamed";
+        // only drop the changes this attempt actually carried
+        pending = pending.filter(function(it){ return mine.indexOf(it) === -1; });
+        setSyncNote("");
+        syncState("saved");
+        return true;
+      })["catch"](function(err){
+        sync.busy = false;
+        syncState("offline", err && err.message ? err.message : "unknown error");
+        return false;
+      });
+  }
+
+  function scheduleAutoSave(){
+    if (!apiUrl()) return;
+    clearTimeout(saveTimer);
+    syncState("saving");
+    saveTimer = setTimeout(function(){
+      if (sync.busy) { scheduleAutoSave(); return; }
+      pushToSheet(1);
+    }, AUTOSAVE_MS);
+  }
+
+  function saveToSheet(){
+    var url = apiUrl();
+    if (!url) { openConnect(); return; }
+    if (!who()) { openConnect(true); return; }
+    clearTimeout(saveTimer);
+    pushToSheet(1).then(function(ok){
+      if (ok) toast("Published to the sheet — everyone sees this now.");
+    });
+  }
+
+  // Quietly notice someone else's work and take it, as long as this browser
+  // has nothing of its own waiting to go out.
+  function pollSheet(){
+    var url = apiUrl();
+    if (!url || sync.busy || pending.length) return;
+    if (document.visibilityState === "hidden") return;
+    fetch(url + (url.indexOf("?") > -1 ? "&" : "?") + "probe=1&ts=" + Date.now())
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if (!d || !d.ok) return;
+        if (sync.state === "offline") syncState("saved");
+        if (typeof d.rev === "number" && sync.rev !== null && d.rev > sync.rev && !pending.length) {
+          return loadFromSheet(true).then(function(){
+            toast("Updated — " + (d.savedBy || "someone") + " changed the teams.");
+          });
+        }
+        applySheetPayload(d);
+        renderStrip();
+      })["catch"](function(){ /* a dropped poll is not worth reporting */ });
+  }
+
+  function startPolling(){
+    clearInterval(pollTimer);
+    if (!apiUrl()) return;
+    pollTimer = setInterval(pollSheet, POLL_MS);
+    document.addEventListener("visibilitychange", function(){
+      if (document.visibilityState === "visible") pollSheet();
+    });
+  }
+
+  var connectDlg = document.getElementById("connectDlg");
+  function openConnect(nameOnly){
+    var u = document.getElementById("connectUrl");
+    var n = document.getElementById("connectWho");
+    var baked = document.getElementById("connectBaked");
+    u.value = apiUrl();
+    n.value = who();
+    u.disabled = !!SHEET_API;
+    baked.hidden = !SHEET_API;
+    document.getElementById("connectHint").textContent = nameOnly
+      ? "Almost there — put your name in so the sheet records who saved the teams."
+      : "Point this page at the Apps Script web app on your registration sheet.";
+    if (typeof connectDlg.showModal === "function") connectDlg.showModal(); else connectDlg.setAttribute("open", "");
+    (nameOnly || SHEET_API ? n : u).focus();
+  }
+  document.getElementById("connectClose").addEventListener("click", function(){ closeDialog(connectDlg); });
+  document.getElementById("connectSave").addEventListener("click", function(){
+    var u = document.getElementById("connectUrl").value.trim();
+    var n = document.getElementById("connectWho").value.trim();
+    if (!SHEET_API) {
+      if (u && !/^https:\/\/script\.google\.com\/.*\/exec$/.test(u)) {
+        toast("That does not look like an Apps Script /exec URL.");
+        return;
+      }
+      try { if (u) localStorage.setItem(API_KEY, u); else localStorage.removeItem(API_KEY); } catch (e) {}
+    }
+    if (n) setWho(n);
+    closeDialog(connectDlg);
+    if (apiUrl()) { loadFromSheet(false); startPolling(); }
+    else { setSyncNote(""); toast("Running without a master sheet — changes stay in this browser."); }
+  });
+
+  document.getElementById("saveSheetBtn").addEventListener("click", saveToSheet);
+  document.getElementById("syncBtn").addEventListener("click", function(){ loadFromSheet(false); });
+
+  /* ---------------- share link ----------------
+     The whole draw is packed into the URL fragment, so a shared link needs no
+     server: the page that opens it rebuilds these exact teams. */
+
+  var SHARE_BASE_KEY = "sgs-sports-randomizer/share-base";
+
+  function playerKey(p){
+    return String(p.name || "").toLowerCase().trim() + "|" + String(p.email || "").toLowerCase().trim();
+  }
+  function embeddedSheet(){
+    return JSON.parse(document.getElementById("sheet-data").textContent);
+  }
+  function embeddedKeys(){
+    var e = embeddedSheet();
+    var sch = buildSchema(e.headers, e.rows);
+    var seen = {}, keys = [];
+    e.rows.forEach(function(r){
+      var nm = sch.cols.name ? r[sch.cols.name] : null;
+      if (nm == null || String(nm).trim() === "") return;
+      var k = String(nm).replace(/\s+/g, " ").trim().toLowerCase() + "|" +
+              (sch.cols.email ? String(r[sch.cols.email] || "").toLowerCase().trim() : "");
+      if (seen[k]) return;
+      seen[k] = 1; keys.push(k);
+    });
+    return keys;
+  }
+  function teamIndex(key){
+    for (var i = 0; i < TEAMS.length; i++) if (TEAMS[i].key === key) return i;
+    return -1;
+  }
+
+  // Compact payload when the roster is still the built-in sheet: just who sits
+  // where, plus anyone added by hand. Otherwise send the whole roster.
+  // columns this session added on top of the sheet's own (e.g. Mobile number)
+  function extraHeaders(base){
+    return schema.headers.filter(function(h){ return base.indexOf(h) === -1; });
+  }
+  function sameSheet(base){
+    var kept = schema.headers.filter(function(h){ return base.indexOf(h) > -1; });
+    return kept.join("\u0001") === base.join("\u0001");
+  }
+
+  function sharePayload(){
+    var e = embeddedSheet();
+    if (sameSheet(e.headers)) {
+      var keys = embeddedKeys();
+      var byKey = {}, ok = true;
+      state.players.forEach(function(p){ if (!p.added) byKey[playerKey(p)] = p; });
+      var t = keys.map(function(k){
+        var p = byKey[k];
+        if (!p) return -2;          // removed from the roster
+        delete byKey[k];
+        return p.team ? teamIndex(p.team) : -1;
+      });
+      for (var leftover in byKey) { ok = false; break; }
+      if (ok) return {v:1, m:"c", n:keys.length, d:state.drawnAt, t:t,
+                      h:extraHeaders(e.headers),
+                      x:state.players.filter(function(p){ return p.added; })};
+    }
+    return {v:1, m:"f", d:state.drawnAt, s:schema, p:state.players};
+  }
+
+  function u8ToB64url(u8){
+    var out = "", CH = 0x8000;
+    for (var i = 0; i < u8.length; i += CH) {
+      out += String.fromCharCode.apply(null, u8.subarray(i, i + CH));
+    }
+    return btoa(out).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function b64urlToU8(str){
+    str = String(str).replace(/-/g, "+").replace(/_/g, "/");
+    while (str.length % 4) str += "=";
+    var bin = atob(str);
+    var u8 = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    return u8;
+  }
+  function packState(){
+    var json = JSON.stringify(sharePayload());
+    var bytes = new TextEncoder().encode(json);
+    if (typeof CompressionStream === "undefined") {
+      return Promise.resolve("0" + u8ToB64url(bytes));
+    }
+    var cs = new CompressionStream("deflate-raw");
+    var w = cs.writable.getWriter();
+    w.write(bytes); w.close();
+    return new Response(cs.readable).arrayBuffer().then(function(ab){
+      return "1" + u8ToB64url(new Uint8Array(ab));
+    });
+  }
+  function unpackState(token){
+    var flag = token.charAt(0);
+    var u8 = b64urlToU8(token.slice(1));
+    if (flag === "0") return Promise.resolve(JSON.parse(new TextDecoder().decode(u8)));
+    if (typeof DecompressionStream === "undefined") return Promise.reject(new Error("no decompressor"));
+    var ds = new DecompressionStream("deflate-raw");
+    var w = ds.writable.getWriter();
+    w.write(u8); w.close();
+    return new Response(ds.readable).arrayBuffer().then(function(ab){
+      return JSON.parse(new TextDecoder().decode(ab));
+    });
+  }
+
+  function applyShared(data){
+    if (!data || data.v !== 1) throw new Error("unrecognised link");
+    if (data.m === "c") {
+      var e = embeddedSheet();
+      ingest(e.headers, e.rows);
+      if (data.n !== state.players.length) throw new Error("roster has changed since that link was made");
+      var keep = [];
+      state.players.forEach(function(p, i){
+        var code = data.t[i];
+        if (code === -2) return;
+        p.team = (code >= 0 && TEAMS[code]) ? TEAMS[code].key : null;
+        keep.push(p);
+      });
+      state.players = keep;
+      (data.h || []).forEach(function(h){
+        if (schema.headers.indexOf(h) === -1) {
+          var after = schema.cols.email || schema.cols.flat || schema.cols.name;
+          var at = schema.headers.indexOf(after);
+          if (at > -1) schema.headers.splice(at + 1, 0, h); else schema.headers.push(h);
+          schema.otherCols.push(h);
+        }
+      });
+      (data.x || []).forEach(function(raw){
+        var p = makePlayer(raw);
+        p.team = raw.team || null;
+        p.added = true;
+        state.players.push(p);
+      });
+    } else {
+      schema = data.s;
+      state.players = data.p;
+      state.uid = data.p.length;
+      if (data.j) journal = data.j;
+    }
+    state.drawnAt = data.d || null;
+    history = [];
+    render();
+  }
+
+  function shareBase(){
+    var stored = "";
+    try { stored = localStorage.getItem(SHARE_BASE_KEY) || ""; } catch (e) {}
+    if (stored) return stored;
+    var here = location.origin + location.pathname;
+    return /^https?:/.test(here) ? here : "";
+  }
+
+  function openShare(){
+    var dlg = document.getElementById("shareDlg");
+    var base = document.getElementById("shareBase");
+    var out = document.getElementById("shareUrl");
+    var size = document.getElementById("shareSize");
+    base.value = shareBase();
+    out.value = "Building link…";
+    size.textContent = "";
+    if (typeof dlg.showModal === "function") dlg.showModal(); else dlg.setAttribute("open", "");
+
+    packState().then(function(token){
+      function paint(){
+        var b = base.value.trim().replace(/#.*$/, "");
+        out.value = (b || "(paste your published address above)") + "#t=" + token;
+        var kb = (out.value.length / 1024).toFixed(1);
+        size.textContent = out.value.length + " characters (" + kb + " KB) · " +
+          state.players.filter(function(p){ return p.team; }).length + " players placed";
+        try { if (b) localStorage.setItem(SHARE_BASE_KEY, b); } catch (e) {}
+      }
+      paint();
+      base.oninput = paint;
+    })["catch"](function(err){
+      out.value = "Could not build the link: " + (err && err.message ? err.message : "unknown error");
+    });
+  }
+
+  document.getElementById("shareBtn").addEventListener("click", openShare);
+  document.getElementById("shareClose").addEventListener("click", function(){
+    closeDialog(document.getElementById("shareDlg"));
+  });
+  document.getElementById("shareCopy").addEventListener("click", function(){
+    var out = document.getElementById("shareUrl");
+    out.select();
+    var done = function(){ toast("Link copied — anyone who opens it gets these exact teams."); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(out.value).then(done, function(){
+        toast("Copy blocked here — select the link above and copy it by hand.");
+      });
+    } else {
+      try { document.execCommand("copy"); done(); }
+      catch (e) { toast("Select the link above and copy it by hand."); }
+    }
+  });
+
+  /* ---------------- wiring ---------------- */
+
+  document.getElementById("genBtn").addEventListener("click", function(){
+    if (!needWho(function(){ document.getElementById("genBtn").click(); })) return;
+    generate();
+    logChange("draw", "Fresh draw of " + state.players.length + " players",
+              {o:"draw", t:teamMap()});
+    dealAnimation();
+  });
+  document.getElementById("undoBtn").addEventListener("click", undo);
+  document.getElementById("exportBtn").addEventListener("click", openExport);
+  document.getElementById("importBtn").addEventListener("click", function(){
+    document.getElementById("fileInput").click();
+  });
+  document.getElementById("fileInput").addEventListener("change", function(e){
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try { importWorkbook(XLSX.read(new Uint8Array(ev.target.result), {type:"array"})); }
+      catch (err) { toast("That file could not be read as a spreadsheet."); }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = "";
+  });
+  document.getElementById("whoami").addEventListener("click", function(){ askWho(null); });
+  document.getElementById("connectBtn").addEventListener("click", function(){ openConnect(false); });
+  document.getElementById("resetBtn").addEventListener("click", function(){
+    if (!needWho(function(){ document.getElementById("resetBtn").click(); })) return;
+    pushHistory();
+    var sheet = JSON.parse(document.getElementById("sheet-data").textContent);
+    ingest(sheet.headers, sheet.rows);
+    logChange("reset", "Restored the original registration sheet");
+    render();
+    toast("Original registration sheet restored — press Generate teams to draw.");
+  });
+  document.getElementById("optGender").addEventListener("change", function(e){
+    if (!state.players.some(function(p){ return p.team; })) return;
+    if (!needWho(function(){ e.target.dispatchEvent(new Event("change")); })) return;
+    generate();
+    logChange("draw", "Redrawn with gender balance " +
+              (e.target.checked ? "on" : "off"), {o:"draw", t:teamMap()});
+  });
+  document.getElementById("optSports").addEventListener("change", function(e){
+    document.body.classList.toggle("nosports", !e.target.checked);
+  });
+  document.addEventListener("keydown", function(e){
+    if ((e.ctrlKey || e.metaKey) && String(e.key).toLowerCase() === "z" && !e.shiftKey) {
+      var tag = (e.target.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select") return;
+      e.preventDefault();
+      undo();
+    }
+  });
+  dropZone(document.getElementById("bench"), null);
+
+  /* ---------------- boot ---------------- */
+
+  if (restore()) {
+    render();
+  } else {
+    var sheet = embeddedSheet();
+    ingest(sheet.headers, sheet.rows);
+    generate();
+    history = [];
+    render();
+  }
+
+  // The master sheet, when there is one, outranks this browser's copy.
+  if (apiUrl() && !/^#t=/.test(location.hash)) loadFromSheet(true);
+  startPolling();
+
+  // A shared link wins over whatever this browser had saved.
+  if (/^#t=/.test(location.hash)) {
+    var token = location.hash.slice(3);
+    unpackState(token).then(function(data){
+      applyShared(data);
+      try { history_replace(); } catch (e) {}
+      toast("Opened a shared draw — these are the teams as they were sent to you.");
+    })["catch"](function(err){
+      toast("That shared link could not be opened: " + (err && err.message ? err.message : "unreadable") + ".");
+    });
+  }
+  function history_replace(){
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(null, "", location.pathname + location.search);
+    }
+  }
+})();
+</script>
+</body>
+</html>
